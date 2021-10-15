@@ -7,9 +7,9 @@ from distutils import spawn
 import subprocess
 import threading
 
-from find_breakpoints import find_breakpoints
-from bed_liftover import bed_liftover
-from apply_inversions import apply_inversions
+from hap_dup.find_breakpoints import find_breakpoints
+from hap_dup.bed_liftover import bed_liftover
+from hap_dup.apply_inversions import apply_inversions
 
 pipeline_dir = os.path.dirname(os.path.realpath(__file__))
 ALN_FILTER = sys.executable + " " + os.path.join(pipeline_dir, "filter_misplaced_alignments.py")

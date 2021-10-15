@@ -1,6 +1,6 @@
 
 import sys
-import fasta_parser as fp
+import hap_dup.fasta_parser as fp
 from collections import defaultdict
 
 
