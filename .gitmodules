@@ -1,3 +1,6 @@
 [submodule "submodules/Flye"]
 	path = submodules/Flye
 	url = https://github.com/fenderglass/Flye
+[submodule "submodules/margin"]
+	path = submodules/margin
+	url = https://github.com/UCSC-nanopore-cgl/margin
