@@ -4,3 +4,6 @@
 [submodule "submodules/margin"]
 	path = submodules/margin
 	url = https://github.com/UCSC-nanopore-cgl/margin
+[submodule "submodules/pepper"]
+	path = submodules/pepper
+	url = https://github.com/kishwarshafin/pepper
