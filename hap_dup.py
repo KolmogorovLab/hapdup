@@ -3,7 +3,7 @@
 
 """
 This script sets up environment paths
-and invokes viralFlye without installation.
+and invokes HapDup
 """
 
 import os
