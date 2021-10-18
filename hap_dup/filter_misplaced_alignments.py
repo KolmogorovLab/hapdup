@@ -5,6 +5,7 @@
 import sys
 import re
 from collections import namedtuple, defaultdict
+import subprocess
 
 
 ReadSegment = namedtuple("ReadSegment", ["read_start", "read_end", "ref_start", "ref_end", "read_id", "ref_id",
@@ -51,11 +52,11 @@ def get_segment(read_id, ref_id, ref_start, strand, cigar, num_mismatch):
     if strand == "-":
         read_start, read_end = read_length - read_end, read_length - read_start
 
-    return ReadSegment(read_start, read_end, ref_start, ref_end, read_id, 
+    return ReadSegment(read_start, read_end, ref_start, ref_end, read_id,
                        ref_id, strand, read_length, mm_rate)
 
 
-def check_read_mapping_confidence(sam_text_entry, min_aln_length, min_aligned_rate, 
+def check_read_mapping_confidence(sam_text_entry, min_aln_length, min_aligned_rate,
                                   max_read_error, max_segments):
     fields = sam_text_entry.split()
 
@@ -127,18 +128,34 @@ def check_read_mapping_confidence(sam_text_entry, min_aln_length, min_aligned_ra
         #    aln.flag = new_flags
 
 
-def main():
-    MIN_ALIGNED_LENGTH = 10000
-    MAX_SEGMENTS = 3
-    MIN_ALIGNED_RATE = 0.9
-    MAX_READ_ERROR = 0.1
+MIN_ALIGNED_LENGTH = 10000
+MAX_SEGMENTS = 3
+MIN_ALIGNED_RATE = 0.9
+MAX_READ_ERROR = 0.1
+SAMTOOLS = "flye-samtools"
 
-    for line in sys.stdin:
-        if line.startswith("@"):
-            sys.stdout.write(line)
+
+def filter_alignments(bam_in, bam_out):
+    bam_reader = subprocess.Popen(SAMTOOLS + " view -h -@4 " + bam_in, shell=True, stdout=subprocess.PIPE)
+    bam_writer = subprocess.Popen(SAMTOOLS + " view - -b -1 -@4 -o " + bam_out, shell=True, stdin=subprocess.PIPE)
+    for line in bam_reader.stdout:
+        if line.startswith(b"@"):
+            bam_writer.stdin.write(line)
             continue
-        if check_read_mapping_confidence(line, MIN_ALIGNED_LENGTH, MIN_ALIGNED_RATE, MAX_READ_ERROR, MAX_SEGMENTS):
-            sys.stdout.write(line)
+        if check_read_mapping_confidence(line.decode("utf-8"), MIN_ALIGNED_LENGTH, MIN_ALIGNED_RATE, MAX_READ_ERROR, MAX_SEGMENTS):
+            bam_writer.stdin.write(line)
+    bam_reader.communicate()
+    bam_writer.communicate()
+
+
+def main():
+    filter_alignments(sys.argv[1], sys.argv[2])
+    #for line in sys.stdin:
+    #    if line.startswith("@"):
+    #        sys.stdout.write(line)
+    #        continue
+    #    if check_read_mapping_confidence(line, MIN_ALIGNED_LENGTH, MIN_ALIGNED_RATE, MAX_READ_ERROR, MAX_SEGMENTS):
+    #        sys.stdout.write(line)
 
 
 if __name__ == "__main__":

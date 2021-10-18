@@ -10,9 +10,10 @@ import threading
 from hap_dup.find_breakpoints import find_breakpoints
 from hap_dup.bed_liftover import bed_liftover
 from hap_dup.apply_inversions import apply_inversions
+from hap_dup.filter_misplaced_alignments import filter_alignments
 
-pipeline_dir = os.path.dirname(os.path.realpath(__file__))
-ALN_FILTER = sys.executable + " " + os.path.join(pipeline_dir, "filter_misplaced_alignments.py")
+#pipeline_dir = os.path.dirname(os.path.realpath(__file__))
+#ALN_FILTER = sys.executable + " " + os.path.join(pipeline_dir, "filter_misplaced_alignments.py")
 
 MARGIN = "margin"
 FLYE = "flye"
@@ -83,9 +84,11 @@ def main():
     if (os.path.isfile(filtered_bam) or os.path.isfile(haplotagged_bam)) and not overwrite:
         print("Skipped filtering phase")
     else:
-        filter_cmd = [SAMTOOLS, "view", "-h", "-@4", args.bam, "|", ALN_FILTER, "|", SAMTOOLS, "view", "-", "-b", "-1", "-@4",">", filtered_bam]
-        print("Running:", " ".join(filter_cmd))
-        subprocess.check_call(" ".join(filter_cmd), shell=True)
+        #filter_cmd = [SAMTOOLS, "view", "-h", "-@4", args.bam, "|", ALN_FILTER, "|", SAMTOOLS, "view", "-", "-b", "-1", "-@4",">", filtered_bam]
+        #print("Running:", " ".join(filter_cmd))
+        #subprocess.check_call(" ".join(filter_cmd), shell=True)
+        print("Filtering alignments")
+        filter_alignments(args.bam, filtered_bam)
         file_check(filtered_bam)
 
         index_cmd = [SAMTOOLS, "index", "-@4", filtered_bam]
