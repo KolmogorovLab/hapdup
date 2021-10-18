@@ -173,7 +173,7 @@ def main():
                        SAMTOOLS, "sort", "-m", "4G", "-@4", ">", minimap_out]
         print("Running:", " ".join(minimap_cmd), file=sys.stderr)
         subprocess.check_call(" ".join(minimap_cmd), shell=True)
-        subprocess.check_call("samtools index -@ 4 {0}".format(minimap_out), shell=True)
+        subprocess.check_call(SAMTOOLS + " index -@ 4 {0}".format(minimap_out), shell=True)
 
         inversions_hp = os.path.join(structural_dir, "inversions_hp{0}.bed".format(hp))
         bed_liftover(inversions_bed, minimap_out, open(inversions_hp, "w"))
