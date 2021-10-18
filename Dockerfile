@@ -67,7 +67,7 @@ RUN rm -rf /opt/hap_dup
 
 # setup models/configurations
 COPY ./pepper_models /opt/pepper_models/
-COPY ./submodules/margin/params opt/margin_params/
+COPY ./submodules/margin/params /opt/margin_params/
 
 ENV PEPPER_MODEL "/opt/pepper_models/PEPPER_VARIANT_R941_ONT_V5.pkl"
 ENV MARGIN_MODEL "/opt/margin_params/misc/allParams.ont_haplotag.sv.json"
