@@ -426,7 +426,7 @@ def _run_pipeline(arguments):
     for r in all_reads:
         if len(r) > 1:
             split_reads.append(r)
-    print("Parsed", len(all_reads), "reads", len(split_reads), "split reads")
+    print("Parsed", len(all_reads), "reads", len(split_reads), "split reads", file=sys.stderr)
 
     split_reads = resolve_overlaps(split_reads, args.cluster_size)
     bp_clusters = get_breakpoints(all_reads, split_reads, args.cluster_size, args.bp_min_reads, args.min_ref_flank, ref_lengths)

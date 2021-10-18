@@ -51,7 +51,7 @@ def main():
 
     for e in [SAMTOOLS, FLYE, MARGIN, MINIMAP, PEPPER_VARIANT]:
         if not spawn.find_executable(e):
-            print("Not installed: " + e)
+            print("Not installed: " + e, file=sys.stderr)
             return 1
 
     if not os.path.isdir(args.out_dir):
@@ -82,23 +82,23 @@ def main():
     #STAGE 1: filter suspicious alignments, index the resulting bam
     overwrite = args.overwrite
     if (os.path.isfile(filtered_bam) or os.path.isfile(haplotagged_bam)) and not overwrite:
-        print("Skipped filtering phase")
+        print("Skipped filtering phase", file=sys.stderr)
     else:
         #filter_cmd = [SAMTOOLS, "view", "-h", "-@4", args.bam, "|", ALN_FILTER, "|", SAMTOOLS, "view", "-", "-b", "-1", "-@4",">", filtered_bam]
         #print("Running:", " ".join(filter_cmd))
         #subprocess.check_call(" ".join(filter_cmd), shell=True)
-        print("Filtering alignments")
+        print("Filtering alignments", file=sys.stderr)
         filter_alignments(args.bam, filtered_bam)
         file_check(filtered_bam)
 
         index_cmd = [SAMTOOLS, "index", "-@4", filtered_bam]
-        print("Running:", " ".join(index_cmd))
+        print("Running:", " ".join(index_cmd), file=sys.stderr)
         subprocess.check_call(" ".join(index_cmd), shell=True)
         overwrite = True
 
     #STAGE 2: Run PEPPER
     if os.path.isfile(pepper_vcf) and not overwrite:
-        print("Skipped pepper phase")
+        print("Skipped pepper phase", file=sys.stderr)
     else:
         pepper_log = os.path.join(pepper_dir, "pepper.log")
         if not os.path.isdir(pepper_dir):
@@ -113,7 +113,7 @@ def main():
                       "-o", os.path.abspath(pepper_dir), "-m", MODEL_PATH, "-t", str(args.threads), "-s", "Sample", "-w", "4", "-bs", "64",
                       "2>&1", "|tee", pepper_log]
 
-        print("Running:", " ".join(pepper_cmd))
+        print("Running:", " ".join(pepper_cmd), file=sys.stderr)
         subprocess.check_call(" ".join(pepper_cmd), shell=True)
         subprocess.call("rm -r " + os.path.join(pepper_dir, "images*"), shell=True)
         subprocess.call("rm -r " + os.path.join(pepper_dir, "predictions*"), shell=True)
@@ -122,7 +122,7 @@ def main():
 
     #STAGE 3: Phase with Margin
     if os.path.isfile(haplotagged_bam) and not overwrite:
-        print("Skipped margin phase")
+        print("Skipped margin phase", file=sys.stderr)
     else:
         margin_log = os.path.join(margin_dir, "margin.log")
         if not os.path.isdir(margin_dir):
@@ -131,26 +131,26 @@ def main():
         margin_cmd = [MARGIN, "phase", os.path.abspath(filtered_bam), os.path.abspath(args.assembly), pepper_vcf, MARGIN_PARAMS,
                       "-t", str(args.threads), "-o", os.path.abspath(os.path.join(margin_dir, "MARGIN_PHASED")),
                       "2>&1", "|tee", margin_log]
-        print("Running:", " ".join(margin_cmd))
+        print("Running:", " ".join(margin_cmd), file=sys.stderr)
         subprocess.check_call(" ".join(margin_cmd), shell=True)
         file_check(haplotagged_bam)
         #subprocess.call("rm " + os.path.abspath(filtered_bam), shell=True)
 
         index_cmd = [SAMTOOLS, "index", "-@4", haplotagged_bam]
-        print("Running:", " ".join(index_cmd))
+        print("Running:", " ".join(index_cmd), file=sys.stderr)
         subprocess.check_call(" ".join(index_cmd), shell=True)
         overwrite = True
 
     #STAGE 4: polish haplotypes with Flye
     if all(map(os.path.isfile, polished_flye_hap.values())) and not overwrite:
-        print("Skipped Flye phase")
+        print("Skipped Flye phase", file=sys.stderr)
     else:
         def run_flye_hp(hp):
             threads = max(1, int(args.threads) // 2)
             flye_out = os.path.join(args.out_dir, "flye_hap_{0}".format(hp))
             flye_cmd = [FLYE, "--polish-target", os.path.abspath(args.assembly), "--nano-raw",  haplotagged_bam, "-t", str(threads),
                         "-o", flye_out, "--polish-haplotypes", "0,{}".format(hp), "2>/dev/null"]
-            print("Running:", " ".join(flye_cmd))
+            print("Running:", " ".join(flye_cmd), file=sys.stderr)
             subprocess.check_call(" ".join(flye_cmd), shell=True)
 
         threads = []
@@ -164,14 +164,14 @@ def main():
     #STAGE 5: structural polishing
     if not os.path.isdir(structural_dir):
         os.mkdir(structural_dir)
-    print("Finding breakpoints")
+    print("Finding breakpoints", file=sys.stderr)
     find_breakpoints(haplotagged_bam, structural_dir, args.threads)
 
     for hp in [1, 2]:
         minimap_out = os.path.join(structural_dir, "liftover_hp{0}.bam".format(hp))
         minimap_cmd = [MINIMAP, "-ax", "asm5", "-t", str(args.threads), "-K", "5G", args.assembly, polished_flye_hap[hp], "2>/dev/null", "|",
                        SAMTOOLS, "sort", "-m", "4G", "-@4", ">", minimap_out]
-        print("Running:", " ".join(minimap_cmd))
+        print("Running:", " ".join(minimap_cmd), file=sys.stderr)
         subprocess.check_call(" ".join(minimap_cmd), shell=True)
         subprocess.check_call("samtools index -@ 4 {0}".format(minimap_out), shell=True)
 
