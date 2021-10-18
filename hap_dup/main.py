@@ -13,18 +13,20 @@ from hap_dup.apply_inversions import apply_inversions
 
 pipeline_dir = os.path.dirname(os.path.realpath(__file__))
 ALN_FILTER = sys.executable + " " + os.path.join(pipeline_dir, "filter_misplaced_alignments.py")
-MARGIN = "/card/tools/margin/build/margin"
-MARGIN_PARAMS = "/card/tools/margin/params/misc/allParams.ont_haplotag.sv.json"
-FLYE = "/card/projects/Flye/bin/flye"
-SAMTOOLS = "samtools"
-MINIMAP = "minimap2"
 
-FS_NAME = "/card"
+MARGIN = "margin"
+FLYE = "flye"
+SAMTOOLS = "flye-samtools"
+MINIMAP = "flye-minimap2"
+PEPPER_VARIANT = "pepper_variant"
+
+#FS_NAME = "/card"
 #DOCKER_ID = "kishwars/pepper_deepvariant:test-r0.5-fix"
-DOCKER_ID = "kishwars/pepper_deepvariant:test-v0.5"
+#DOCKER_ID = "kishwars/pepper_deepvariant:test-v0.5"
 #MODEL_PATH = "/opt/pepper_models/PEPPER_VARIANT_R941_ONT_V5.pkl"
-MODEL_PATH = "/opt/pepper_models/PEPPER_SNP_R941_ONT_V4.pkl"
 
+MODEL_PATH = os.environ["PEPPER_MODEL"]
+MARGIN_PARAMS = os.environ["MARGIN_MODEL"]
 
 def main():
     parser = argparse.ArgumentParser \
@@ -46,7 +48,7 @@ def main():
                         default=10, metavar="int", help="number of parallel threads [10]")
     args = parser.parse_args()
 
-    for e in [SAMTOOLS, "docker", FLYE, MARGIN, MINIMAP]:
+    for e in [SAMTOOLS, FLYE, MARGIN, MINIMAP, PEPPER_VARIANT]:
         if not spawn.find_executable(e):
             print("Not installed: " + e)
             return 1
@@ -60,8 +62,8 @@ def main():
 
     filtered_bam = os.path.join(args.out_dir, "filtered.bam")
     pepper_dir = os.path.join(args.out_dir, "pepper")
-    pepper_vcf = os.path.abspath(os.path.join(pepper_dir, "PEPPER_VARIANT_SNP_OUTPUT.vcf"))
-    #pepper_vcf = os.path.abspath(os.path.join(pepper_dir, "PEPPER_VARIANT_OUTPUT_PHASING.vcf"))
+    #pepper_vcf = os.path.abspath(os.path.join(pepper_dir, "PEPPER_VARIANT_SNP_OUTPUT.vcf"))
+    pepper_vcf = os.path.abspath(os.path.join(pepper_dir, "PEPPER_VARIANT_OUTPUT_PHASING.vcf"))
 
     margin_dir = os.path.join(args.out_dir, "margin")
     haplotagged_bam = os.path.join(margin_dir, "MARGIN_PHASED") + ".haplotagged.bam"
@@ -98,11 +100,16 @@ def main():
         pepper_log = os.path.join(pepper_dir, "pepper.log")
         if not os.path.isdir(pepper_dir):
             os.mkdir(pepper_dir)
-        pepper_cmd = ["docker", "run", "-it", "-v", "{0}:{0}".format(FS_NAME), "-u", "`id -u`:`id -g`", "--ipc", "host",
-                      DOCKER_ID, "pepper_variant", "call_variant", "-b", os.path.abspath(filtered_bam), "-f", os.path.abspath(args.assembly),
+        #pepper_cmd = ["docker", "run", "-it", "-v", "{0}:{0}".format(FS_NAME), "-u", "`id -u`:`id -g`", "--ipc", "host",
+        #              DOCKER_ID, "pepper_variant", "call_variant", "-b", os.path.abspath(filtered_bam), "-f", os.path.abspath(args.assembly),
+        #              "-o", os.path.abspath(pepper_dir), "-m", MODEL_PATH, "-t", str(args.threads), "-s", "Sample", "-w", "4", "-bs", "64",
+        #              "2>&1", "|tee", pepper_log]
+        #"-o", os.path.abspath(pepper_dir), "-m", MODEL_PATH, "-t", str(args.threads), "-s", "Sample", "--allow_supplementary"]
+
+        pepper_cmd = [PEPPER_VARIANT, "call_variant", "-b", os.path.abspath(filtered_bam), "-f", os.path.abspath(args.assembly),
                       "-o", os.path.abspath(pepper_dir), "-m", MODEL_PATH, "-t", str(args.threads), "-s", "Sample", "-w", "4", "-bs", "64",
                       "2>&1", "|tee", pepper_log]
-                      #"-o", os.path.abspath(pepper_dir), "-m", MODEL_PATH, "-t", str(args.threads), "-s", "Sample", "--allow_supplementary"]
+
         print("Running:", " ".join(pepper_cmd))
         subprocess.check_call(" ".join(pepper_cmd), shell=True)
         subprocess.call("rm -r " + os.path.join(pepper_dir, "images*"), shell=True)
