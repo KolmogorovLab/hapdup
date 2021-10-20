@@ -10,12 +10,12 @@ is phased within large (15 Mb+) blocks.
 Quick start
 -----------
 
-The recommended way to run HapDup is a Docker distribution. If it is not currently installed
-in your system, you need to set it up first, following this (guide)[https://docs.docker.com/engine/install/ubuntu/].
+The recommended way to run HapDup is the Docker distribution. If Docker is not installed
+in your system, you need to set it up first following this (guide)[https://docs.docker.com/engine/install/ubuntu/].
 
-HapDup takes as input a long-read assembly, such as produced with (Flye)[https://github.com/fenderglass/Flye] or 
-(Shasta)[https://github.com/chanzuckerberg/shasta]. The first stage is to realign the original long reads
-on the assembly using (minimap2)[https://github.com/lh3/minimap2]:
+HapDup takes as input a long-read assembly, such as produced with [Flye](https://github.com/fenderglass/Flye) or 
+[Shasta](https://github.com/chanzuckerberg/shasta). The first stage is to realign the original long reads
+on the assembly using [minimap2](https://github.com/lh3/minimap2):
 
 ```
 minimap2 -ax map-ont assembly.fasta reads.fastq | samtools sort -@ 4 -m 4G > lr_mapping.bam
@@ -56,11 +56,11 @@ can create four haplotypes).
 
 3. Then we use Margin to phase SNPs and haplotype reads
 
-4. We then use Flye to polish the initall assmely with the reads from each of the two
+4. We then use Flye to polish the initiall assembly with the reads from each of the two
 haplotypes independently
 
 5. Finally, we find (heterozygous) breakpoints in long-read alignments and apply
-the corresponding structural changes two the corresponding polished haplotypes.
+the corresponding structural changes to the corresponding polished haplotypes.
 Currently, it allows to recover large heterozygous inversions.
 
 Benchmarks
@@ -92,15 +92,15 @@ Acknowledgements
 
 The major parts of the HapDup pipeline are:
 
-* (PEPPER)[https://github.com/kishwarshafin/pepper]
-* (Margin)[https://github.com/UCSC-nanopore-cgl/margin]
-* (Flye)[https://github.com/fenderglass/Flye]
+* [PEPPER](https://github.com/kishwarshafin/pepper)
+* [Margin](https://github.com/UCSC-nanopore-cgl/margin)
+* [Flye](https://github.com/fenderglass/Flye)
 
 
 Authors
 -------
 
-The pipeline was developed at (UC Santa Cruz genomics institute)[https://ucscgenomics.soe.ucsc.edu/], Benedict Paten's lab.
+The pipeline was developed at [UC Santa Cruz genomics institute](https://ucscgenomics.soe.ucsc.edu/), Benedict Paten's lab.
 
 Main code contributors:
 * Mikhail Kolmogorov
@@ -112,7 +112,7 @@ If you use HapDap in your research, the most relevant papers to cite are:
 
 Kishwar Shafin, Trevor Pesout, Pi-Chuan Chang, Maria Nattestad, Alexey Kolesnikov, Sidharth Goel, Gunjan Baid et al. 
 "Haplotype-aware variant calling enables high accuracy in nanopore long-reads using deep neural networks." bioRxiv (2021).
-(doi:10.1101/2021.03.04.433952)[https://doi.org/10.1101/2021.03.04.433952]
+[doi:10.1101/2021.03.04.433952](https://doi.org/10.1101/2021.03.04.433952)
 
 
 Mikhail Kolmogorov, Jeffrey Yuan, Yu Lin and Pavel Pevzner, 
