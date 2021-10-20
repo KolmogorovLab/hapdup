@@ -1,11 +1,18 @@
 #!/usr/bin/env python3
 
-#Script to filter out possibly mismapped alignments in sam
+"""
+Script to filter out possibly mismapped alignments in sam
+"""
 
+import os
 import sys
+import pysam
 import re
+import random
 from collections import namedtuple, defaultdict
 import subprocess
+import signal
+import multiprocessing as mp
 
 
 ReadSegment = namedtuple("ReadSegment", ["read_start", "read_end", "ref_start", "ref_end", "read_id", "ref_id",
@@ -128,34 +135,60 @@ def check_read_mapping_confidence(sam_text_entry, min_aln_length, min_aligned_ra
         #    aln.flag = new_flags
 
 
-MIN_ALIGNED_LENGTH = 10000
-MAX_SEGMENTS = 3
-MIN_ALIGNED_RATE = 0.9
-MAX_READ_ERROR = 0.1
-SAMTOOLS = "flye-samtools"
+def filter_alignments(bam_in, bam_out, contig_ids):
+    MIN_ALIGNED_LENGTH = 10000
+    MAX_SEGMENTS = 3
+    MIN_ALIGNED_RATE = 0.9
+    MAX_READ_ERROR = 0.1
+
+    bam_reader = pysam.AlignmentFile(bam_in, "rb")
+    bam_writer = pysam.AlignmentFile(bam_out, "wb", template=bam_reader)
+    for ctg in contig_ids:
+        for aln in bam_reader.fetch(ctg):
+            line = aln.to_string()
+            if check_read_mapping_confidence(line, MIN_ALIGNED_LENGTH, MIN_ALIGNED_RATE, MAX_READ_ERROR, MAX_SEGMENTS):
+                bam_writer.write(aln)
 
 
-def filter_alignments(bam_in, bam_out):
-    bam_reader = subprocess.Popen(SAMTOOLS + " view -h -@4 " + bam_in, shell=True, stdout=subprocess.PIPE)
-    bam_writer = subprocess.Popen(SAMTOOLS + " view - -b -1 -@4 -o " + bam_out, shell=True, stdin=subprocess.PIPE)
-    for line in bam_reader.stdout:
-        if line.startswith(b"@"):
-            bam_writer.stdin.write(line)
+def filter_alignments_parallel(bam_in, bam_out, num_threads):
+    all_reference_ids = [r for r in pysam.AlignmentFile(bam_in, "rb").references]
+    random.shuffle(all_reference_ids)
+
+    bams_to_merge = []
+    threads = []
+    chunk_size = len(all_reference_ids) // num_threads + 1
+
+    orig_sigint = signal.signal(signal.SIGINT, signal.SIG_IGN)
+    for i in range(num_threads):
+        contigs_list = all_reference_ids[i * chunk_size : (i + 1) * chunk_size]
+        if not contigs_list:
             continue
-        if check_read_mapping_confidence(line.decode("utf-8"), MIN_ALIGNED_LENGTH, MIN_ALIGNED_RATE, MAX_READ_ERROR, MAX_SEGMENTS):
-            bam_writer.stdin.write(line)
-    bam_reader.communicate()
-    bam_writer.communicate()
+
+        bam_out_part = bam_out + "_part_" + str(i)
+        bams_to_merge.append(bam_out_part)
+        threads.append(mp.Process(target=filter_alignments, args=(bam_in, bam_out_part, contigs_list)))
+
+    signal.signal(signal.SIGINT, orig_sigint)
+
+    for t in threads:
+        t.start()
+    try:
+        for t in threads:
+            t.join()
+            if t.exitcode != 0:
+                raise Exception("One of the processes exited with code: {0}".format(t.exitcode))
+    except KeyboardInterrupt:
+        for t in threads:
+            t.terminate()
+        raise
+
+    pysam.merge("-@", str(num_threads), bam_out, *bams_to_merge)
+    for bam in bams_to_merge:
+        os.remove(bam)
 
 
 def main():
-    filter_alignments(sys.argv[1], sys.argv[2])
-    #for line in sys.stdin:
-    #    if line.startswith("@"):
-    #        sys.stdout.write(line)
-    #        continue
-    #    if check_read_mapping_confidence(line, MIN_ALIGNED_LENGTH, MIN_ALIGNED_RATE, MAX_READ_ERROR, MAX_SEGMENTS):
-    #        sys.stdout.write(line)
+    filter_alignments_parallel(sys.argv[1], sys.argv[2], 16)
 
 
 if __name__ == "__main__":
