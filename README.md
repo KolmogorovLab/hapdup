@@ -11,7 +11,7 @@ Quick start
 -----------
 
 The recommended way to run HapDup is the Docker distribution. If Docker is not installed
-in your system, you need to set it up first following this (guide)[https://docs.docker.com/engine/install/ubuntu/].
+in your system, you need to set it up first following this [guide](https://docs.docker.com/engine/install/ubuntu/).
 
 HapDup takes as input a long-read assembly, such as produced with [Flye](https://github.com/fenderglass/Flye) or 
 [Shasta](https://github.com/chanzuckerberg/shasta). The first stage is to realign the original long reads
