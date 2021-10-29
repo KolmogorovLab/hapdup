@@ -6,6 +6,7 @@ import argparse
 from distutils import spawn
 import subprocess
 import threading
+import shutil
 
 from hap_dup.find_breakpoints import find_breakpoints
 from hap_dup.bed_liftover import bed_liftover
@@ -19,12 +20,8 @@ SAMTOOLS = "flye-samtools"
 MINIMAP = "flye-minimap2"
 PEPPER_VARIANT = "pepper_variant"
 
-#FS_NAME = "/card"
-#DOCKER_ID = "kishwars/pepper_deepvariant:test-r0.5-fix"
-#DOCKER_ID = "kishwars/pepper_deepvariant:test-v0.5"
-#MODEL_PATH = "/opt/pepper_models/PEPPER_VARIANT_R941_ONT_V5.pkl"
 
-MODEL_PATH = os.environ["PEPPER_MODEL"]
+PEPPER_MODEL = os.environ["PEPPER_MODEL"]
 MARGIN_PARAMS = os.environ["MARGIN_MODEL"]
 
 def main():
@@ -59,10 +56,14 @@ def main():
         if not os.path.isfile(path):
             raise Exception("Missing output:", path)
 
+    file_check(args.bam)
+    file_check(args.assembly)
+
     filtered_bam = os.path.join(args.out_dir, "filtered.bam")
     pepper_dir = os.path.join(args.out_dir, "pepper")
     #pepper_vcf = os.path.abspath(os.path.join(pepper_dir, "PEPPER_VARIANT_SNP_OUTPUT.vcf"))
-    pepper_vcf = os.path.abspath(os.path.join(pepper_dir, "PEPPER_VARIANT_OUTPUT_PHASING.vcf"))
+    #pepper_vcf = os.path.abspath(os.path.join(pepper_dir, "PEPPER_VARIANT_OUTPUT_PHASING.vcf"))
+    pepper_vcf = os.path.abspath(os.path.join(pepper_dir, "PEPPER_VARIANT_FULL.vcf"))
 
     margin_dir = os.path.join(args.out_dir, "margin")
     haplotagged_bam = os.path.join(margin_dir, "MARGIN_PHASED") + ".haplotagged.bam"
@@ -98,15 +99,13 @@ def main():
         pepper_log = os.path.join(pepper_dir, "pepper.log")
         if not os.path.isdir(pepper_dir):
             os.mkdir(pepper_dir)
-        #pepper_cmd = ["docker", "run", "-it", "-v", "{0}:{0}".format(FS_NAME), "-u", "`id -u`:`id -g`", "--ipc", "host",
-        #              DOCKER_ID, "pepper_variant", "call_variant", "-b", os.path.abspath(filtered_bam), "-f", os.path.abspath(args.assembly),
-        #              "-o", os.path.abspath(pepper_dir), "-m", MODEL_PATH, "-t", str(args.threads), "-s", "Sample", "-w", "4", "-bs", "64",
-        #              "2>&1", "|tee", pepper_log]
-        #"-o", os.path.abspath(pepper_dir), "-m", MODEL_PATH, "-t", str(args.threads), "-s", "Sample", "--allow_supplementary"]
+
+        model_copy = os.path.join(pepper_dir, "pepper_model.bin")
+        shutil.copyfile(PEPPER_MODEL, model_copy)
 
         pepper_cmd = [PEPPER_VARIANT, "call_variant", "-b", os.path.abspath(filtered_bam), "-f", os.path.abspath(args.assembly),
-                      "-o", os.path.abspath(pepper_dir), "-m", MODEL_PATH, "-t", str(args.threads), "-s", "Sample", "-w", "4", "-bs", "64",
-                      "2>&1", "|tee", pepper_log]
+                      "-o", os.path.abspath(pepper_dir), "-m", model_copy, "-t", str(args.threads), "-s", "Sample", "--ont",
+                      "--include-supplementary", "2>&1", "|tee", pepper_log]
 
         print("Running:", " ".join(pepper_cmd), file=sys.stderr)
         subprocess.check_call(" ".join(pepper_cmd), shell=True)

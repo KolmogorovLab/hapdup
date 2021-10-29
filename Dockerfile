@@ -18,9 +18,13 @@ RUN apt-get update && \
 	apt-get -y install liblzma-dev libhdf5-dev libncurses5-dev libncursesw5-dev && \
 	apt-get -y install python3-dev python3-pip && \
 	apt-get -y install cmake && \
+	apt-get -y install protobuf-compiler libprotobuf-dev && \
 	apt-get clean && \
 	apt-get purge && \
 	rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+RUN ln -s /usr/bin/python3 /usr/bin/python
+RUN which python
 
 RUN python3 --version
 RUN python3 -m pip install --upgrade pip
@@ -41,7 +45,8 @@ RUN cmake --version
 
 # get PEPPER
 WORKDIR /opt
-COPY ./submodules/pepper /opt/pepper/
+#COPY ./submodules/pepper /opt/pepper/
+COPY ./submodules/pepper-private /opt/pepper/
 RUN cd /opt/pepper && \
     python3 -m pip install .
 
@@ -69,7 +74,7 @@ RUN rm -rf /opt/hap_dup
 COPY ./pepper_models /opt/pepper_models/
 COPY ./submodules/margin/params /opt/margin_params/
 
-ENV PEPPER_MODEL "/opt/pepper_models/PEPPER_VARIANT_R941_ONT_V5.pkl"
-ENV MARGIN_MODEL "/opt/margin_params/misc/allParams.ont_haplotag.sv.json"
+ENV PEPPER_MODEL "/opt/pepper_models/PEPPER_VARIANT_ONT_R941_GUPPY5_SUP_V6.pkl"
+ENV MARGIN_MODEL "/opt/margin_params/phase/allParams.haplotag.ont-r94g507.incSupAln.json"
 
 ENV PYTHONUNBUFFERED "1"
