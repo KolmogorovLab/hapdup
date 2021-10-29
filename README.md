@@ -108,7 +108,7 @@ Main code contributors:
 Citation
 --------
 
-If you use HapDap in your research, the most relevant papers to cite are:
+If you use hapdup in your research, the most relevant papers to cite are:
 
 Kishwar Shafin, Trevor Pesout, Pi-Chuan Chang, Maria Nattestad, Alexey Kolesnikov, Sidharth Goel, Gunjan Baid et al. 
 "Haplotype-aware variant calling enables high accuracy in nanopore long-reads using deep neural networks." bioRxiv (2021).
