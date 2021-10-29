@@ -66,9 +66,9 @@ RUN rm -rf /opt/margin_dir
 
 #install the pipeline
 WORKDIR /opt
-COPY . /opt/hap_dup
-RUN cd /opt/hap_dup && python3 -m pip install .
-RUN rm -rf /opt/hap_dup
+COPY . /opt/hapdup
+RUN cd /opt/hapdup && python3 -m pip install .
+RUN rm -rf /opt/hapdup
 
 # setup models/configurations
 COPY ./pepper_models /opt/pepper_models/

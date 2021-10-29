@@ -8,10 +8,10 @@ import subprocess
 import threading
 import shutil
 
-from hap_dup.find_breakpoints import find_breakpoints
-from hap_dup.bed_liftover import bed_liftover
-from hap_dup.apply_inversions import apply_inversions
-from hap_dup.filter_misplaced_alignments import filter_alignments_parallel
+from hapdup.find_breakpoints import find_breakpoints
+from hapdup.bed_liftover import bed_liftover
+from hapdup.apply_inversions import apply_inversions
+from hapdup.filter_misplaced_alignments import filter_alignments_parallel
 
 
 MARGIN = "margin"

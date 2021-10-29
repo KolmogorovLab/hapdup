@@ -21,5 +21,5 @@ os.environ["MARGIN_MODEL"] = os.path.join(hap_dup_root, "submodules", "margin", 
                                           "allParams.ont_haplotag.sv.json")
 
 #entry point
-from hap_dup.main import main
+from hapdup.main import main
 sys.exit(main())

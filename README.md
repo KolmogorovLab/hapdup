@@ -1,19 +1,19 @@
-# HapDup
+# hapdup
 
-HapDup (haplotype duplicator) is a pipeline to convert a haploid long-read assembly into a (pseudo-)diploid assembly.
+hapdup (haplotype duplicator) is a pipeline to convert a haploid long-read assembly into a (pseudo-)diploid assembly.
 The assembly preserves heterozygous structural variants (in addition to small variants) and
 is phased within large (15 Mb+) blocks.
 
 
-## Version 0.1
+## Version 0.2
 
 Quick start
 -----------
 
-The recommended way to run HapDup is the Docker distribution. If Docker is not installed
+The recommended way to run hapdup is the Docker distribution. If Docker is not installed
 in your system, you need to set it up first following this [guide](https://docs.docker.com/engine/install/ubuntu/).
 
-HapDup takes as input a long-read assembly, such as produced with [Flye](https://github.com/fenderglass/Flye) or 
+hapdup takes as input a long-read assembly, such as produced with [Flye](https://github.com/fenderglass/Flye) or 
 [Shasta](https://github.com/chanzuckerberg/shasta). The first stage is to realign the original long reads
 on the assembly using [minimap2](https://github.com/lh3/minimap2):
 
@@ -23,14 +23,14 @@ samtools index -@ 4 assembly_lr_mapping.bam
 ```
 
 Next steps assume that your `assembly.fasta` and `lr_mapping.bam` are in the same directory,
-which will also be used for HapDup output. If it is not the case, you might need to bind additional 
+which will also be used for hapdup output. If it is not the case, you might need to bind additional 
 directories using the Docker's `-v / --volume` argument. The number of threads (`-t` argument)
 should be adjusted according to the available resources.
 
 ```
 cd directory_with_assembly_and_alignment
 HD_DIR=`pwd`
-docker run -v $HD_DIR:$HD_DIR --ipc=host -u `id -u`:`id -g` mkolmogo/hap_dup:0.1 hap_dup --assembly $HD_DIR/assembly.fasta --bam $HD_DIR/lr_mapping.bam --out-dir $HD_DIR/hap_dup -t 64
+docker run -v $HD_DIR:$HD_DIR --ipc=host -u `id -u`:`id -g` mkolmogo/hapdup:0.2 hapdup --assembly $HD_DIR/assembly.fasta --bam $HD_DIR/lr_mapping.bam --out-dir $HD_DIR/hapdup -t 64
 ```
 
 Output files
@@ -48,7 +48,7 @@ Fully-phased blocks are given in the the `phased_blocks*` files.
 Pipeline overview
 -----------------
 
-1. HapDup starts with filtering alignments that are likely originating from the unassembled parts of the genome.
+1. hapdup starts with filtering alignments that are likely originating from the unassembled parts of the genome.
 Such alignments may later create false haplotypes if not removed (e.g. if reads from a segmental duplication with two copies
 can create four haplotypes).
 
@@ -77,20 +77,20 @@ Benchmarks
 Source installation
 -------------------
 
-Here are the instructions to build a HapDup docker image locally.
+Here are the instructions to build a hapdup docker image locally.
 To install directly into the system, please see `Dockerfile` for the command lines.
 
 ```
-git clone https://github.com/fenderglass/HapDup
-cd HapDup
+git clone https://github.com/fenderglass/hapdup
+cd hapdup
 git submodule update --init --recursive
-docker build -t hap_dup .
+docker build -t hapdup .
 ```
 
 Acknowledgements
 ----------------
 
-The major parts of the HapDup pipeline are:
+The major parts of the hapdup pipeline are:
 
 * [PEPPER](https://github.com/kishwarshafin/pepper)
 * [Margin](https://github.com/UCSC-nanopore-cgl/margin)
@@ -122,13 +122,13 @@ Mikhail Kolmogorov, Jeffrey Yuan, Yu Lin and Pavel Pevzner,
 License
 -------
 
-HapDup is distributed under a BSD license. See the [LICENSE file](LICENSE) for details.
+hapdup is distributed under a BSD license. See the [LICENSE file](LICENSE) for details.
 Other software included in this discrubution is released under either MIT or BSD licenses.
 
 
 How to get help
 ---------------
 A preferred way report any problems or ask questions is the 
-[issue tracker](https://github.com/fenderglass/HapDup/issues). 
+[issue tracker](https://github.com/fenderglass/hapdup/issues). 
 
 In case you prefer personal communication, please contact Mikhail at fenderglass@gmail.com.
