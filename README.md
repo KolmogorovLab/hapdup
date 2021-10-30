@@ -114,8 +114,13 @@ Authors
 
 The pipeline was developed at [UC Santa Cruz genomics institute](https://ucscgenomics.soe.ucsc.edu/), Benedict Paten's lab.
 
-Main code contributors:
+Pipeline code contributors:
 * Mikhail Kolmogorov
+
+PEPPER/Margin/Shasta support:
+* Kishwar Shafin
+* Trevor Pesout
+* Paolo Carnevali
 
 Citation
 --------
