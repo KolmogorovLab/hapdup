@@ -85,10 +85,10 @@ Evaluated using truvari with `-r 2000` option. GT refers to genotype-considered 
 
 Yak k-mer based evaluations:
 
-|       |  QV  | Switch err | Hamming err |
--------------------------------------------
-| Hap 1 |  35  |   0.0389   |   0.1862    |  
-| Hap 2 |  35  |   0.0385   |   0.1845    |
+| Hap   |  QV  | Switch err | Hamming err |
+|-----------------------------------------|
+|     1 |  35  |   0.0389   |   0.1862    |  
+|     2 |  35  |   0.0385   |   0.1845    |
 
 Given a minimap2 alignment, hapdup runs in ~400 CPUh and uses ~80 Gb of RAM.
 
