@@ -86,7 +86,7 @@ Evaluated using truvari with `-r 2000` option. GT refers to genotype-considered 
 Yak k-mer based evaluations:
 
 | Hap   |  QV  | Switch err | Hamming err |
-|-----------------------------------------|
+|-------|------|------------|-------------|
 |     1 |  35  |   0.0389   |   0.1862    |  
 |     2 |  35  |   0.0385   |   0.1845    |
 
