@@ -83,8 +83,14 @@ Evaluated using truvari with `-r 2000` option. GT refers to genotype-considered 
 | CuteSV         |  0.9324   | 0.9428 | 0.9376   | 0.9119       | 0.9416    |  0.9265     |
 | hifiasm        |  0.9512   | 0.9734 | 0.9622   | 0.9129       | 0.9723    |  0.9417     |
 
-Given a minimap2 alignment, hapdup runs in ~400 CPUh and uses ~80 Gb of RAM.
+Yak k-mer based evaluations:
 
+|       |  QV  | Switch err | Hamming err |
+-------------------------------------------
+| Hap 1 |  35  |   0.0389   |   0.1862    |  
+| Hap 2 |  35  |   0.0385   |   0.1845    |
+
+Given a minimap2 alignment, hapdup runs in ~400 CPUh and uses ~80 Gb of RAM.
 
 Source installation
 -------------------
