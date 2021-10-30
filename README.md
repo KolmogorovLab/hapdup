@@ -66,13 +66,25 @@ Currently, it allows to recover large heterozygous inversions.
 Benchmarks
 ----------
 
-[Section to be completed]
+We evaluated hapdup haplotypes in terms of reconstructed structural variants signatures (heterozygous & homozygous)
+using the HG002 for which the [curated set of SVs](https://www.nature.com/articles/s41587-020-0538-8) 
+is available. We used the [recent ONT data](https://s3-us-west-2.amazonaws.com/miten-hg002/index.html?prefix=guppy_5.0.7/) 
+basecalled with Guppy 5.
 
-* SV evaluation on HG002 + other genomes?
+Given hapdup haplotypes, we called SV using [dipdiff](https://github.com/fenderglass/dipdiff). We also compare SV
+set against hifiasm assemblies, even though they were produced from HiFi, rather than ONT reads.
+Evaluated using truvari with `-r 2000` option. GT refers to genotype-considered benchmarks.
 
-* Yak evaluations
 
-* Running time, memory usage
+| Method         | Precision | Recall | F1-score | GT Precision | GT Recall | GT F1-score |
+|----------------|-----------|--------|----------|--------------|-----------|-------------|
+| Shasta+Hapdup  |  0.9500   | 0.9551 | 0.9525   | 0.934        | 0.9543    |  0.9405     |
+| Sniffles       |  0.9294   | 0.9143 | 0.9219   | 0.8284       | 0.9051    |  0.8605     |
+| CuteSV         |  0.9324   | 0.9428 | 0.9376   | 0.9119       | 0.9416    |  0.9265     |
+| hifiasm        |  0.9512   | 0.9734 | 0.9622   | 0.9129       | 0.9723    |  0.9417     |
+
+Given a minimap2 alignment, hapdup runs in ~400 CPUh and uses ~80 Gb of RAM.
+
 
 Source installation
 -------------------
