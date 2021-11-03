@@ -32,8 +32,8 @@ RUN cd /opt/flye && python3 setup.py install && \
 
 # get PEPPER
 WORKDIR /opt
-#COPY ./submodules/pepper /opt/pepper/
-COPY ./submodules/pepper-private /opt/pepper/
+COPY ./submodules/pepper /opt/pepper/
+#COPY ./submodules/pepper-private /opt/pepper/
 RUN cd /opt/pepper && \
     python3 -m pip install . && \
 	rm -rf /opt/pepper

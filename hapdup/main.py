@@ -104,7 +104,7 @@ def main():
         shutil.copyfile(PEPPER_MODEL, model_copy)
 
         pepper_cmd = [PEPPER_VARIANT, "call_variant", "-b", os.path.abspath(filtered_bam), "-f", os.path.abspath(args.assembly),
-                      "-o", os.path.abspath(pepper_dir), "-m", model_copy, "-t", str(args.threads), "-s", "Sample", "--ont",
+                      "-o", os.path.abspath(pepper_dir), "-m", model_copy, "-t", str(args.threads), "-s", "Sample", "--ont_r9_guppy5_sup",
                       "--include-supplementary", "2>&1", "|tee", pepper_log]
 
         print("Running:", " ".join(pepper_cmd), file=sys.stderr)
