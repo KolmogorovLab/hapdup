@@ -1,8 +1,8 @@
-# hapdup
+# Hapdup
 
-hapdup (haplotype duplicator) is a pipeline to convert a haploid long-read assembly into a (pseudo-)diploid assembly.
-The assembly preserves heterozygous structural variants (in addition to small variants) and
-is locally-phased within large blocks.
+Hapdup (haplotype duplicator) is a pipeline to convert a haploid Oxford Nanopore assembly into a (pseudo-)diploid assembly.
+The reconstructed haplotypes preserve heterozygous structural variants (in addition to small variants) and
+are locally phased.
 
 
 ## Version 0.2
