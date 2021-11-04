@@ -10,12 +10,14 @@ are locally phased.
 Quick start
 -----------
 
+Hapdup is available on the [Docker Hub](https://hub.docker.com/repository/docker/mkolmogo/hapdup).
+
 The recommended way to run hapdup is the Docker distribution. If Docker is not installed
 in your system, you need to set it up first following this [guide](https://docs.docker.com/engine/install/ubuntu/).
 
 hapdup takes as input a long-read assembly, such as produced with [Flye](https://github.com/fenderglass/Flye) or 
 [Shasta](https://github.com/chanzuckerberg/shasta). The first stage is to realign the original long reads
-on the assembly using [minimap2](https://github.com/lh3/minimap2):
+on the assembly using [minimap2](https://github.com/lh3/minimap2). We recommend to use the latest minimap2 release.
 
 ```
 minimap2 -ax map-ont assembly.fasta reads.fastq | samtools sort -@ 4 -m 4G > lr_mapping.bam
