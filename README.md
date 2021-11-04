@@ -15,8 +15,11 @@ Hapdup is available on the [Docker Hub](https://hub.docker.com/repository/docker
 The recommended way to run hapdup is the Docker distribution. If Docker is not installed
 in your system, you need to set it up first following this [guide](https://docs.docker.com/engine/install/ubuntu/).
 
-hapdup takes as input a long-read assembly, such as produced with [Flye](https://github.com/fenderglass/Flye) or 
-[Shasta](https://github.com/chanzuckerberg/shasta). The first stage is to realign the original long reads
+Hapdup takes as input a long-read assembly, such as produced with [Flye](https://github.com/fenderglass/Flye) or 
+[Shasta](https://github.com/chanzuckerberg/shasta). The assembly is assumed to be hapoid, alternative
+alleles could be removed prior to running the pipeline using [purge_dups](https://github.com/dfguan/purge_dups).
+
+The first stage is to realign the original long reads
 on the assembly using [minimap2](https://github.com/lh3/minimap2). We recommend to use the latest minimap2 release.
 
 ```
