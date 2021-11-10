@@ -7,13 +7,8 @@ are locally phased.
 
 ## Version 0.2
 
-Quick start
------------
-
-Hapdup is available on the [Docker Hub](https://hub.docker.com/repository/docker/mkolmogo/hapdup).
-
-The recommended way to run hapdup is the Docker distribution. If Docker is not installed
-in your system, you need to set it up first following this [guide](https://docs.docker.com/engine/install/ubuntu/).
+Input requirements
+------------------
 
 Hapdup takes as input a long-read assembly, such as produced with [Flye](https://github.com/fenderglass/Flye) or 
 [Shasta](https://github.com/chanzuckerberg/shasta). The assembly is assumed to be hapoid, alternative
@@ -27,6 +22,13 @@ minimap2 -ax map-ont assembly.fasta reads.fastq | samtools sort -@ 4 -m 4G > lr_
 samtools index -@ 4 assembly_lr_mapping.bam
 ```
 
+Quick start using Docker
+------------------------
+
+Hapdup is available on the [Docker Hub](https://hub.docker.com/repository/docker/mkolmogo/hapdup).
+
+If Docker is not installed in your system, you need to set it up first following this [guide](https://docs.docker.com/engine/install/ubuntu/).
+
 Next steps assume that your `assembly.fasta` and `lr_mapping.bam` are in the same directory,
 which will also be used for hapdup output. If it is not the case, you might need to bind additional 
 directories using the Docker's `-v / --volume` argument. The number of threads (`-t` argument)
@@ -36,6 +38,28 @@ should be adjusted according to the available resources.
 cd directory_with_assembly_and_alignment
 HD_DIR=`pwd`
 docker run -v $HD_DIR:$HD_DIR -u `id -u`:`id -g` mkolmogo/hapdup:0.2 \
+  hapdup --assembly $HD_DIR/assembly.fasta --bam $HD_DIR/lr_mapping.bam --out-dir $HD_DIR/hapdup -t 64
+```
+
+Quick start using Singularity
+-----------------------------
+
+Alternatively, you can use [Singularity](https://sylabs.io/guides/3.5/user-guide/). First, you will need install
+the client as descibed in the manual. One way to do it is through conda:
+
+```
+conda install singularity
+```
+
+Next steps assume that your `assembly.fasta` and `lr_mapping.bam` are in the same directory,
+which will also be used for hapdup output. If it is not the case, you might need to bind additional 
+directories using the `--bind` argument. The number of threads (`-t` argument)
+should be adjusted according to the available resources.
+
+```
+singularity pull docker://mkolmogo/hapdup:0.2
+HD_DIR=`pwd`
+singularity exec --bind $HD_DIR hapdup_0.2.sif \
   hapdup --assembly $HD_DIR/assembly.fasta --bam $HD_DIR/lr_mapping.bam --out-dir $HD_DIR/hapdup -t 64
 ```
 
