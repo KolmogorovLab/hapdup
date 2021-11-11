@@ -129,8 +129,8 @@ Here are the instructions to build a hapdup docker image locally.
 To install directly into the system, please see `Dockerfile` for the command lines.
 
 ```
-git clone https://github.com/fenderglass/hapdup
-cd hapdup
+git clone https://github.com/fenderglass/Hapdup
+cd Hapdup
 git submodule update --init --recursive
 docker build -t hapdup .
 ```
