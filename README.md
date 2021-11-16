@@ -5,7 +5,7 @@ The reconstructed haplotypes preserve heterozygous structural variants (in addit
 are locally phased.
 
 
-## Version 0.2
+## Version 0.3
 
 Input requirements
 ------------------
@@ -37,7 +37,7 @@ should be adjusted according to the available resources.
 ```
 cd directory_with_assembly_and_alignment
 HD_DIR=`pwd`
-docker run -v $HD_DIR:$HD_DIR -u `id -u`:`id -g` mkolmogo/hapdup:0.2 \
+docker run -v $HD_DIR:$HD_DIR -u `id -u`:`id -g` mkolmogo/hapdup:0.3 \
   hapdup --assembly $HD_DIR/assembly.fasta --bam $HD_DIR/lr_mapping.bam --out-dir $HD_DIR/hapdup -t 64
 ```
 
@@ -57,9 +57,9 @@ directories using the `--bind` argument. The number of threads (`-t` argument)
 should be adjusted according to the available resources.
 
 ```
-singularity pull docker://mkolmogo/hapdup:0.2
+singularity pull docker://mkolmogo/hapdup:0.3
 HD_DIR=`pwd`
-singularity exec --bind $HD_DIR hapdup_0.2.sif \
+singularity exec --bind $HD_DIR hapdup_0.3.sif \
   hapdup --assembly $HD_DIR/assembly.fasta --bam $HD_DIR/lr_mapping.bam --out-dir $HD_DIR/hapdup -t 64
 ```
 
