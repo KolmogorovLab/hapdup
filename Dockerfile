@@ -63,7 +63,7 @@ COPY ./pepper_models /opt/pepper_models/
 COPY ./submodules/margin/params /opt/margin_params/
 
 ENV PEPPER_MODEL "/opt/pepper_models/PEPPER_VARIANT_ONT_R941_GUPPY5_SUP_V6.pkl"
-ENV MARGIN_MODEL "/opt/margin_params/phase/allParams.haplotag.ont-r94g507.incSupAln.json"
+ENV MARGIN_MODEL "/opt/margin_params/phase/allParams.haplotag.ont-r94g507.hapDup.json"
 #ENV MARGIN_MODEL "/opt/margin_params/phase/allParams.haplotag.ont-r94g507.json"
 
 ENV PYTHONUNBUFFERED "1"
