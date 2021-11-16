@@ -125,14 +125,33 @@ Given a minimap2 alignment, hapdup runs in ~400 CPUh and uses ~80 Gb of RAM.
 Source installation
 -------------------
 
-Here are the instructions to build a hapdup docker image locally.
-To install directly into the system, please see `Dockerfile` for the command lines.
+If you prefer, you can install from source as follows:
 
 ```
+#create a new conda environemnt and activate it
+conda create -n hapdup python=3.8
+conda activate hapdup
+
+#get Hapdup source
 git clone https://github.com/fenderglass/Hapdup
 cd Hapdup
 git submodule update --init --recursive
-docker build -t hapdup .
+
+#build and install Flye
+pushd submodules/Flye/ && python setup.py install && popd
+
+#build and install Margin
+pushd submodules/margin/ && mkdir build && cd build && cmake .. && make && cp ./margin $CONDA_PREFIX/bin/ && popd
+
+#build and install PEPPER and its dependencies
+pushd submodules/pepper/ && python -m pip install . && popd
+```
+
+To run, ensure that the conda environemnt is activated and then execute:
+
+```
+conda activate hapdup
+./hapdup.py --assembly assembly.fasta --bam lr_mapping.bam --out-dir hapdup -t 64
 ```
 
 Acknowledgements
