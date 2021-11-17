@@ -18,7 +18,7 @@ The first stage is to realign the original long reads
 on the assembly using [minimap2](https://github.com/lh3/minimap2). We recommend to use the latest minimap2 release.
 
 ```
-minimap2 -ax map-ont assembly.fasta reads.fastq | samtools sort -@ 4 -m 4G > lr_mapping.bam
+minimap2 -ax map-ont -t 30 assembly.fasta reads.fastq | samtools sort -@ 4 -m 4G > lr_mapping.bam
 samtools index -@ 4 assembly_lr_mapping.bam
 ```
 
