@@ -2,6 +2,10 @@
 import sys
 import hapdup.fasta_parser as fp
 from collections import defaultdict
+import logging
+
+
+logger = logging.getLogger()
 
 
 def apply_inversions(bed_inversions, input_fasta, output_fasta, haplotype):
@@ -22,7 +26,7 @@ def apply_inversions(bed_inversions, input_fasta, output_fasta, haplotype):
             fasta_dict[seq] = fasta_dict[seq][:inv_start] + fp.reverse_complement(fasta_dict[seq][inv_start:inv_end]) + fasta_dict[seq][inv_end:]
             num_applied += 1
 
-    print("Applied", num_applied, "inversions for haplotype", haplotype, file=sys.stderr)
+    logger.info("Applied %d inversions for haplotype %d", num_applied, haplotype)
     fp.write_fasta_dict(fasta_dict, output_fasta)
 
 

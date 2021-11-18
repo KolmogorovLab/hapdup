@@ -16,7 +16,9 @@ from multiprocessing import Pool
 import random
 import argparse
 import os
+import logging
 
+logger = logging.getLogger()
 
 ReadSegment = namedtuple("ReadSegment", ["read_start", "read_end", "ref_start", "ref_end", "read_id", "ref_id",
                                          "strand", "read_length", "haplotype"])
@@ -426,7 +428,7 @@ def _run_pipeline(arguments):
     for r in all_reads:
         if len(r) > 1:
             split_reads.append(r)
-    print("Parsed", len(all_reads), "reads", len(split_reads), "split reads", file=sys.stderr)
+    logger.info("Parsed %d reads %d split reads", len(all_reads), len(split_reads))
 
     split_reads = resolve_overlaps(split_reads, args.cluster_size)
     bp_clusters = get_breakpoints(all_reads, split_reads, args.cluster_size, args.bp_min_reads, args.min_ref_flank, ref_lengths)

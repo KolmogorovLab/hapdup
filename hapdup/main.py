@@ -7,6 +7,7 @@ from distutils import spawn
 import subprocess
 import threading
 import shutil
+import logging
 
 from hapdup.find_breakpoints import find_breakpoints
 from hapdup.bed_liftover import bed_liftover
@@ -28,6 +29,33 @@ PEPPER_MODEL = {"hifi" : os.path.join(PEPPER_MODEL_DIR, "PEPPER_VARIANT_HIFI_V6.
 MARGIN_CONFIG_DIR = os.environ["MARGIN_CONFIG_DIR"]
 MARGIN_CONFIG = {"hifi" : os.path.join(MARGIN_CONFIG_DIR, "allParams.haplotag.pb-hifi.json"),
                  "ont" : os.path.join(MARGIN_CONFIG_DIR, "allParams.haplotag.ont-r94g507.hapDup.json")}
+
+
+logger = logging.getLogger()
+
+
+def _enable_logging(log_file, debug, overwrite):
+    """
+    Turns on logging, sets debug levels and assigns a log file
+    """
+    log_formatter = logging.Formatter("[%(asctime)s] %(name)s: %(levelname)s: "
+                                      "%(message)s", "%Y-%m-%d %H:%M:%S")
+    console_formatter = logging.Formatter("[%(asctime)s] %(levelname)s: "
+                                          "%(message)s", "%Y-%m-%d %H:%M:%S")
+    console_log = logging.StreamHandler()
+    console_log.setFormatter(console_formatter)
+    if not debug:
+        console_log.setLevel(logging.INFO)
+
+    if overwrite:
+        open(log_file, "w").close()
+    file_handler = logging.FileHandler(log_file, mode="a")
+    file_handler.setFormatter(log_formatter)
+
+    logger.setLevel(logging.DEBUG)
+    logger.addHandler(console_log)
+    logger.addHandler(file_handler)
+
 
 def main():
     parser = argparse.ArgumentParser(description="Reassemble haplotypes from collapsed haploid assmebly")
@@ -68,7 +96,11 @@ def main():
 
     def file_check(path):
         if not os.path.isfile(path):
-            raise Exception("Missing output:", path)
+            logger.error("Missing output: %s", path)
+            raise Exception("Missing output")
+
+    hapdup_log = os.path.join(args.out_dir, "hapdup.log")
+    _enable_logging(hapdup_log, debug=False, overwrite=False)
 
     file_check(args.bam)
     file_check(args.assembly)
@@ -98,21 +130,21 @@ def main():
     #STAGE 1: filter suspicious alignments, index the resulting bam
     overwrite = args.overwrite
     if (os.path.isfile(filtered_bam) or os.path.isfile(haplotagged_bam)) and not overwrite:
-        print("Skipped filtering phase", file=sys.stderr)
+        logger.info("Skipped filtering phase")
     else:
-        print("Filtering alignments", file=sys.stderr)
+        logger.info("Filtering alignments")
         filter_alignments_parallel(args.bam, filtered_bam, min(args.threads, 30),
                                    args.min_aligned_length, args.max_read_error)
         file_check(filtered_bam)
 
         index_cmd = [SAMTOOLS, "index", "-@4", filtered_bam]
-        print("Running:", " ".join(index_cmd), file=sys.stderr)
+        logger.info("Running: %s", " ".join(index_cmd))
         subprocess.check_call(" ".join(index_cmd), shell=True)
         overwrite = True
 
     #STAGE 2: Run PEPPER
     if os.path.isfile(pepper_vcf) and not overwrite:
-        print("Skipped pepper phase", file=sys.stderr)
+        logger.info("Skipped pepper phase")
     else:
         pepper_log = os.path.join(pepper_dir, "pepper.log")
         if not os.path.isdir(pepper_dir):
@@ -131,7 +163,7 @@ def main():
                       "-o", os.path.abspath(pepper_dir), "-m", model_copy, "-t", str(args.threads), "-s", "Sample", reads_arg,
                       "--include-supplementary", "2>&1", "|tee", pepper_log]
 
-        print("Running:", " ".join(pepper_cmd), file=sys.stderr)
+        logger.info("Running: %s", " ".join(pepper_cmd))
         subprocess.check_call(" ".join(pepper_cmd), shell=True)
         subprocess.call("rm -r " + os.path.join(pepper_dir, "images*"), shell=True)
         subprocess.call("rm -r " + os.path.join(pepper_dir, "predictions*"), shell=True)
@@ -140,7 +172,7 @@ def main():
 
     #STAGE 3: Phase with Margin
     if os.path.isfile(haplotagged_bam) and not overwrite:
-        print("Skipped margin phase", file=sys.stderr)
+        logger.info("Skipped margin phase")
     else:
         margin_log = os.path.join(margin_dir, "margin.log")
         if not os.path.isdir(margin_dir):
@@ -149,19 +181,19 @@ def main():
         margin_cmd = [MARGIN, "phase", os.path.abspath(filtered_bam), os.path.abspath(args.assembly), pepper_vcf, MARGIN_CONFIG[args.rtype],
                       "-t", str(args.threads), "-o", os.path.abspath(os.path.join(margin_dir, "MARGIN_PHASED")),
                       "2>&1", "|tee", margin_log]
-        print("Running:", " ".join(margin_cmd), file=sys.stderr)
+        logger.info("Running: %s", " ".join(margin_cmd))
         subprocess.check_call(" ".join(margin_cmd), shell=True)
         file_check(haplotagged_bam)
         #subprocess.call("rm " + os.path.abspath(filtered_bam), shell=True)
 
         index_cmd = [SAMTOOLS, "index", "-@4", haplotagged_bam]
-        print("Running:", " ".join(index_cmd), file=sys.stderr)
+        logger.info("Running: %s", " ".join(index_cmd))
         subprocess.check_call(" ".join(index_cmd), shell=True)
         overwrite = True
 
     #STAGE 4: polish haplotypes with Flye
     if all(map(os.path.isfile, polished_flye_hap.values())) and not overwrite:
-        print("Skipped Flye phase", file=sys.stderr)
+        logger.info("Skipped Flye phase")
     else:
         def run_flye_hp(hp):
             threads = max(1, int(args.threads) // 2)
@@ -175,7 +207,7 @@ def main():
 
             flye_cmd = [FLYE, "--polish-target", os.path.abspath(args.assembly), reads_arg,  haplotagged_bam, "-t", str(threads),
                         "-o", flye_out, "--polish-haplotypes", "0,{}".format(hp), "2>/dev/null"]
-            print("Running:", " ".join(flye_cmd), file=sys.stderr)
+            logger.info("Running: %s", " ".join(flye_cmd))
             subprocess.check_call(" ".join(flye_cmd), shell=True)
 
         threads = []
@@ -189,14 +221,14 @@ def main():
     #STAGE 5: structural polishing
     if not os.path.isdir(structural_dir):
         os.mkdir(structural_dir)
-    print("Finding breakpoints", file=sys.stderr)
+    logger.info("Finding breakpoints")
     find_breakpoints(haplotagged_bam, structural_dir, args.threads)
 
     for hp in [1, 2]:
         minimap_out = os.path.join(structural_dir, "liftover_hp{0}.bam".format(hp))
         minimap_cmd = [MINIMAP, "-ax", "asm5", "-t", str(args.threads), "-K", "5G", args.assembly, polished_flye_hap[hp], "2>/dev/null", "|",
                        SAMTOOLS, "sort", "-m", "4G", "-@4", ">", minimap_out]
-        print("Running:", " ".join(minimap_cmd), file=sys.stderr)
+        logger.info("Running: %s", " ".join(minimap_cmd))
         subprocess.check_call(" ".join(minimap_cmd), shell=True)
         subprocess.check_call(SAMTOOLS + " index -@ 4 {0}".format(minimap_out), shell=True)
 
