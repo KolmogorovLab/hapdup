@@ -21,12 +21,16 @@ MINIMAP = "flye-minimap2"
 PEPPER_VARIANT = "pepper_variant"
 
 
-PEPPER_MODEL = os.environ["PEPPER_MODEL"]
-MARGIN_PARAMS = os.environ["MARGIN_MODEL"]
+PEPPER_MODEL_DIR = os.environ["PEPPER_MODEL_DIR"]
+PEPPER_MODEL = {"hifi" : os.path.join(PEPPER_MODEL_DIR, "PEPPER_VARIANT_HIFI_V6.pkl"),
+                 "ont" : os.path.join(PEPPER_MODEL_DIR, "PEPPER_VARIANT_ONT_R941_GUPPY5_SUP_V6.pkl")}
+
+MARGIN_CONFIG_DIR = os.environ["MARGIN_CONFIG_DIR"]
+MARGIN_CONFIG = {"hifi" : os.path.join(MARGIN_CONFIG_DIR, "allParams.haplotag.pb-hifi.json"),
+                 "ont" : os.path.join(MARGIN_CONFIG_DIR, "allParams.haplotag.ont-r94g507.hapDup.json")}
 
 def main():
-    parser = argparse.ArgumentParser \
-        (description="Reassemble haplotypes from collapsed haploid assmebly")
+    parser = argparse.ArgumentParser(description="Reassemble haplotypes from collapsed haploid assmebly")
 
     parser.add_argument("--assembly", dest="assembly",
                         metavar="path", required=True,
@@ -39,7 +43,13 @@ def main():
     parser.add_argument("--overwrite", dest="overwrite",
                         default=False, action="store_true",
                         help="Do not attempt to restart from complete phases, overwrites existing results")
+    parser.add_argument("--rtype", dest="rtype", default="ont", required=True, metavar="(ont|hifi)",
+                        help="Long reads type, ONT or HiFi: (ont|hifi)")
 
+    parser.add_argument("--min-aligned-length", dest="min_aligned_length", type=int,
+                        default=10000, metavar="int", help="minimum aligned length for each read [10000]")
+    parser.add_argument("--max-read-error", dest="max_read_error", type=float,
+                        default=0.1, metavar="float", help="maximum read mapping error rate [0.1]")
     parser.add_argument("-t", "--threads", dest="threads", type=int,
                         default=10, metavar="int", help="number of parallel threads [10]")
     args = parser.parse_args()
@@ -52,12 +62,19 @@ def main():
     if not os.path.isdir(args.out_dir):
         os.mkdir(args.out_dir)
 
+    if args.rtype not in ["ont", "hifi"]:
+        print("Reads type could be either 'ont' or 'hifi'", file=sys.stderr)
+        return 1
+
     def file_check(path):
         if not os.path.isfile(path):
             raise Exception("Missing output:", path)
 
     file_check(args.bam)
     file_check(args.assembly)
+
+    file_check(PEPPER_MODEL[args.rtype])
+    file_check(MARGIN_CONFIG[args.rtype])
 
     filtered_bam = os.path.join(args.out_dir, "filtered.bam")
     pepper_dir = os.path.join(args.out_dir, "pepper")
@@ -84,7 +101,8 @@ def main():
         print("Skipped filtering phase", file=sys.stderr)
     else:
         print("Filtering alignments", file=sys.stderr)
-        filter_alignments_parallel(args.bam, filtered_bam, min(args.threads, 30))
+        filter_alignments_parallel(args.bam, filtered_bam, min(args.threads, 30),
+                                   args.min_aligned_length, args.max_read_error)
         file_check(filtered_bam)
 
         index_cmd = [SAMTOOLS, "index", "-@4", filtered_bam]
@@ -101,10 +119,16 @@ def main():
             os.mkdir(pepper_dir)
 
         model_copy = os.path.join(pepper_dir, "pepper_model.bin")
-        shutil.copyfile(PEPPER_MODEL, model_copy)
+        shutil.copyfile(PEPPER_MODEL[args.rtype], model_copy)
+
+        reads_arg = None
+        if args.rtype == "ont":
+            reads_arg = "--ont_r9_guppy5_sup"
+        elif args.rtype == "hifi":
+            reads_arg = "--hifi"
 
         pepper_cmd = [PEPPER_VARIANT, "call_variant", "-b", os.path.abspath(filtered_bam), "-f", os.path.abspath(args.assembly),
-                      "-o", os.path.abspath(pepper_dir), "-m", model_copy, "-t", str(args.threads), "-s", "Sample", "--ont_r9_guppy5_sup",
+                      "-o", os.path.abspath(pepper_dir), "-m", model_copy, "-t", str(args.threads), "-s", "Sample", reads_arg,
                       "--include-supplementary", "2>&1", "|tee", pepper_log]
 
         print("Running:", " ".join(pepper_cmd), file=sys.stderr)
@@ -122,7 +146,7 @@ def main():
         if not os.path.isdir(margin_dir):
             os.mkdir(margin_dir)
 
-        margin_cmd = [MARGIN, "phase", os.path.abspath(filtered_bam), os.path.abspath(args.assembly), pepper_vcf, MARGIN_PARAMS,
+        margin_cmd = [MARGIN, "phase", os.path.abspath(filtered_bam), os.path.abspath(args.assembly), pepper_vcf, MARGIN_CONFIG[args.rtype],
                       "-t", str(args.threads), "-o", os.path.abspath(os.path.join(margin_dir, "MARGIN_PHASED")),
                       "2>&1", "|tee", margin_log]
         print("Running:", " ".join(margin_cmd), file=sys.stderr)
@@ -142,7 +166,14 @@ def main():
         def run_flye_hp(hp):
             threads = max(1, int(args.threads) // 2)
             flye_out = os.path.join(args.out_dir, "flye_hap_{0}".format(hp))
-            flye_cmd = [FLYE, "--polish-target", os.path.abspath(args.assembly), "--nano-raw",  haplotagged_bam, "-t", str(threads),
+
+            reads_arg = None
+            if args.rtype == "ont":
+                reads_arg = "--nano-raw"
+            elif args.rtype == "hifi":
+                reads_arg = "--pacbio-hifi"
+
+            flye_cmd = [FLYE, "--polish-target", os.path.abspath(args.assembly), reads_arg,  haplotagged_bam, "-t", str(threads),
                         "-o", flye_out, "--polish-haplotypes", "0,{}".format(hp), "2>/dev/null"]
             print("Running:", " ".join(flye_cmd), file=sys.stderr)
             subprocess.check_call(" ".join(flye_cmd), shell=True)

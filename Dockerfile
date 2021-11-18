@@ -62,8 +62,7 @@ RUN cd /opt/hapdup && python3 -m pip install . && \
 COPY ./pepper_models /opt/pepper_models/
 COPY ./submodules/margin/params /opt/margin_params/
 
-ENV PEPPER_MODEL "/opt/pepper_models/PEPPER_VARIANT_ONT_R941_GUPPY5_SUP_V6.pkl"
-ENV MARGIN_MODEL "/opt/margin_params/phase/allParams.haplotag.ont-r94g507.hapDup.json"
-#ENV MARGIN_MODEL "/opt/margin_params/phase/allParams.haplotag.ont-r94g507.json"
+ENV PEPPER_MODEL_DIR "/opt/pepper_models"
+ENV MARGIN_CONFIG_DIR "/opt/margin_params/phase"
 
 ENV PYTHONUNBUFFERED "1"
