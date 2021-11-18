@@ -11,14 +11,18 @@ Input requirements
 ------------------
 
 Hapdup takes as input a long-read assembly, such as produced with [Flye](https://github.com/fenderglass/Flye) or 
-[Shasta](https://github.com/chanzuckerberg/shasta). The assembly is assumed to be hapoid, alternative
+[Shasta](https://github.com/chanzuckerberg/shasta). 
+
+Hapdup is currently designed for low-heterozygosity genomes (such as human). The expectation is that the assembly
+has most of the diploid genome collapsed into a single haplotype. For assemblies with partially resolved haplotypes, alternative
 alleles could be removed prior to running the pipeline using [purge_dups](https://github.com/dfguan/purge_dups).
+We expect to add a better support of highly heterozygous genomes in the future.
 
 The first stage is to realign the original long reads
 on the assembly using [minimap2](https://github.com/lh3/minimap2). We recommend to use the latest minimap2 release.
 
 ```
-minimap2 -ax map-ont assembly.fasta reads.fastq | samtools sort -@ 4 -m 4G > lr_mapping.bam
+minimap2 -ax map-ont -t 30 assembly.fasta reads.fastq | samtools sort -@ 4 -m 4G > lr_mapping.bam
 samtools index -@ 4 assembly_lr_mapping.bam
 ```
 
