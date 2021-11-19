@@ -13,6 +13,7 @@ from hapdup.find_breakpoints import find_breakpoints
 from hapdup.bed_liftover import bed_liftover
 from hapdup.apply_inversions import apply_inversions
 from hapdup.filter_misplaced_alignments import filter_alignments_parallel
+from hapdup.__version__ import __version__
 
 
 MARGIN = "margin"
@@ -57,6 +58,10 @@ def _enable_logging(log_file, debug, overwrite):
     logger.addHandler(file_handler)
 
 
+def _version():
+    return str(__version__)
+
+
 def main():
     parser = argparse.ArgumentParser(description="Reassemble haplotypes from collapsed haploid assmebly")
 
@@ -80,6 +85,7 @@ def main():
                         default=0.1, metavar="float", help="maximum read mapping error rate [0.1]")
     parser.add_argument("-t", "--threads", dest="threads", type=int,
                         default=10, metavar="int", help="number of parallel threads [10]")
+    parser.add_argument("-v", "--version", action="version", version=_version())
     args = parser.parse_args()
 
     for e in [SAMTOOLS, FLYE, MARGIN, MINIMAP, PEPPER_VARIANT]:
