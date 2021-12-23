@@ -135,13 +135,13 @@ def check_read_mapping_confidence(sam_text_entry, min_aln_length, min_aligned_ra
         #    aln.flag = new_flags
 
 
-def filter_alignments(bam_in, bam_out, contig_ids, min_aligned_length, max_read_error):
+def filter_alignments(bam_in, bam_out, contig_ids, min_aligned_length, max_read_error, bam_index):
     #MIN_ALIGNED_LENGTH = 10000
     MAX_SEGMENTS = 3
     MIN_ALIGNED_RATE = 0.9
     #MAX_READ_ERROR = 0.1
 
-    bam_reader = pysam.AlignmentFile(bam_in, "rb")
+    bam_reader = pysam.AlignmentFile(bam_in, "rb", index_filename=bam_index)
     bam_writer = pysam.AlignmentFile(bam_out, "wb", template=bam_reader)
     for ctg in contig_ids:
         for aln in bam_reader.fetch(ctg):
@@ -150,8 +150,9 @@ def filter_alignments(bam_in, bam_out, contig_ids, min_aligned_length, max_read_
                 bam_writer.write(aln)
 
 
-def filter_alignments_parallel(bam_in, bam_out, num_threads, min_aligned_length, max_read_error):
-    all_reference_ids = [r for r in pysam.AlignmentFile(bam_in, "rb").references]
+def filter_alignments_parallel(bam_in, bam_out, num_threads, min_aligned_length, max_read_error,
+                               bam_index=None):
+    all_reference_ids = [r for r in pysam.AlignmentFile(bam_in, "rb", index_filename=bam_index).references]
     random.shuffle(all_reference_ids)
 
     bams_to_merge = []
@@ -167,7 +168,8 @@ def filter_alignments_parallel(bam_in, bam_out, num_threads, min_aligned_length,
         bam_out_part = bam_out + "_part_" + str(i)
         bams_to_merge.append(bam_out_part)
         threads.append(mp.Process(target=filter_alignments, args=(bam_in, bam_out_part, contigs_list,
-                                                                  min_aligned_length, max_read_error)))
+                                                                  min_aligned_length, max_read_error,
+                                                                  bam_index)))
 
     signal.signal(signal.SIGINT, orig_sigint)
 

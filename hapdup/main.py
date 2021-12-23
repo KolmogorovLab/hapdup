@@ -70,6 +70,8 @@ def main():
                         help="path to haploid assembly (contigs in fasta format)")
     parser.add_argument("--bam", dest="bam", required=True, metavar="path",
                         default=None, help="path to the alignment of reads on the assembly in bam format")
+    parser.add_argument("--bam-index", dest="bam_index", required=False, metavar="path",
+                        default=None, help="path to bam index (if non-standard)")
     parser.add_argument("--out-dir", dest="out_dir",
                         default=None, required=True,
                         metavar="path", help="Output directory")
@@ -140,7 +142,8 @@ def main():
     else:
         logger.info("Filtering alignments")
         filter_alignments_parallel(args.bam, filtered_bam, min(args.threads, 30),
-                                   args.min_aligned_length, args.max_read_error)
+                                   args.min_aligned_length, args.max_read_error,
+                                   args.bam_index)
         file_check(filtered_bam)
 
         index_cmd = [SAMTOOLS, "index", "-@4", filtered_bam]
