@@ -24,8 +24,8 @@ PEPPER_VARIANT = "pepper_variant"
 
 
 PEPPER_MODEL_DIR = os.environ["PEPPER_MODEL_DIR"]
-PEPPER_MODEL = {"hifi" : os.path.join(PEPPER_MODEL_DIR, "PEPPER_VARIANT_HIFI_V6.pkl"),
-                 "ont" : os.path.join(PEPPER_MODEL_DIR, "PEPPER_VARIANT_ONT_R941_GUPPY5_SUP_V6.pkl")}
+PEPPER_MODEL = {"hifi" : os.path.join(PEPPER_MODEL_DIR, "PEPPER_VARIANT_HIFI_V7.pkl"),
+                 "ont" : os.path.join(PEPPER_MODEL_DIR, "PEPPER_VARIANT_ONT_R941_GUPPY5_SUP_V7.pkl")}
 
 MARGIN_CONFIG_DIR = os.environ["MARGIN_CONFIG_DIR"]
 MARGIN_CONFIG = {"hifi" : os.path.join(MARGIN_CONFIG_DIR, "allParams.haplotag.pb-hifi.hapDup.json"),
