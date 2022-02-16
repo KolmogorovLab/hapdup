@@ -174,7 +174,7 @@ def main():
 
         pepper_cmd = [PEPPER_VARIANT, "call_variant", "-b", os.path.abspath(filtered_bam), "-f", os.path.abspath(args.assembly),
                       "-o", os.path.abspath(pepper_dir), "-m", model_copy, "-t", str(args.threads), "-s", "Sample", reads_arg,
-                      "--include-supplementary", "2>&1", "|tee", pepper_log]
+                      "--include-supplementary", "--no_quantized", "2>&1", "|tee", pepper_log]
 
         logger.info("Running: %s", " ".join(pepper_cmd))
         subprocess.check_call(" ".join(pepper_cmd), shell=True)
