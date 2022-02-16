@@ -72,6 +72,8 @@ def main():
                         default=None, help="path to the alignment of reads on the assembly in bam format")
     parser.add_argument("--bam-index", dest="bam_index", required=False, metavar="path",
                         default=None, help="path to bam index (if non-standard)")
+    parser.add_argument("--pepper-model", dest="pepper_model", required=False, metavar="path",
+                        default=None, help="path to custom pepper model")
     parser.add_argument("--out-dir", dest="out_dir",
                         default=None, required=True,
                         metavar="path", help="Output directory")
@@ -159,8 +161,10 @@ def main():
         if not os.path.isdir(pepper_dir):
             os.mkdir(pepper_dir)
 
+        if args.pepper_model is None:
+            args.pepper_model = PEPPER_MODEL[args.rtype]
         model_copy = os.path.join(pepper_dir, "pepper_model.bin")
-        shutil.copyfile(PEPPER_MODEL[args.rtype], model_copy)
+        shutil.copyfile(args.pepper_model, model_copy)
 
         reads_arg = None
         if args.rtype == "ont":
