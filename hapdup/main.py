@@ -10,7 +10,7 @@ import shutil
 import logging
 
 from hapdup.find_breakpoints import find_breakpoints
-from hapdup.bed_liftover import bed_liftover
+from hapdup.bed_liftover import liftover_parallel
 from hapdup.apply_inversions import apply_inversions
 from hapdup.filter_misplaced_alignments import filter_alignments_parallel
 from hapdup.__version__ import __version__
@@ -246,10 +246,12 @@ def main():
         subprocess.check_call(SAMTOOLS + " index -@ 4 {0}".format(minimap_out), shell=True)
 
         inversions_hp = os.path.join(structural_dir, "inversions_hp{0}.bed".format(hp))
-        bed_liftover(inversions_bed, minimap_out, open(inversions_hp, "w"))
+        #bed_liftover(inversions_bed, minimap_out, open(inversions_hp, "w"))
+        liftover_parallel(inversions_bed, minimap_out, open(inversions_hp, "w"), False, args.threads)
 
         phased_blocks_hp = os.path.join(args.out_dir, "phased_blocks_hp{0}.bed".format(hp))
-        bed_liftover(phased_blocks_bed, minimap_out, open(phased_blocks_hp, "w"))
+        #bed_liftover(phased_blocks_bed, minimap_out, open(phased_blocks_hp, "w"))
+        liftover_parallel(phased_blocks_bed, minimap_out, open(phased_blocks_hp, "w"), False, args.threads)
 
         apply_inversions(inversions_hp, polished_flye_hap[hp], final_haplotype[hp], hp)
 

@@ -73,7 +73,7 @@ def bed_liftover(bed_file, bam_file, output_failed, ctg_id):
     for line in open(bed_file, "r"):
         line = line.strip()
         if line.startswith("#"):
-            out_stream.write(line + "\n")
+            #out_strings.append(line)
             continue
 
         fields = line.split("\t")
@@ -82,9 +82,9 @@ def bed_liftover(bed_file, bam_file, output_failed, ctg_id):
         if chr_id != ctg_id:
             continue
 
-        MIN_BLOCK = 1000
-        if chr_end - chr_start < MIN_BLOCK:
-            continue
+        #MIN_BLOCK = 50
+        #if chr_end - chr_start < MIN_BLOCK:
+        #    continue
 
         proj_start_chr, proj_start_pos, proj_start_sign = project(bam_file, chr_id, chr_start)
         proj_end_chr, proj_end_pos, proj_end_sign = project(bam_file, chr_id, chr_end)
