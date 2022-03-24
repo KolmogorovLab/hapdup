@@ -239,7 +239,8 @@ def main():
 
     for hp in [1, 2]:
         minimap_out = os.path.join(structural_dir, "liftover_hp{0}.bam".format(hp))
-        minimap_cmd = [MINIMAP, "-ax", "asm5", "-t", str(args.threads), "-K", "5G", args.assembly, polished_flye_hap[hp], "2>/dev/null", "|",
+        minimap_cmd = [MINIMAP, "-ax", "asm5", "-t", str(args.threads), "-K", "5G", "-I", "64G",
+                       args.assembly, polished_flye_hap[hp], "2>/dev/null", "|",
                        SAMTOOLS, "sort", "-m", "4G", "-@4", ">", minimap_out]
         logger.info("Running: %s", " ".join(minimap_cmd))
         subprocess.check_call(" ".join(minimap_cmd), shell=True)
