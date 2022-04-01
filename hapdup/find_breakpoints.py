@@ -18,11 +18,13 @@ import argparse
 import os
 import logging
 
+from filter_misplaced_alignments import check_read_mapping_confidence
+
 logger = logging.getLogger()
 
 ReadSegment = namedtuple("ReadSegment", ["read_start", "read_end", "ref_start", "ref_end", "read_id", "ref_id",
-                                         "strand", "read_length", "haplotype"])
-#ReadConnection = namedtuple("ReadConnection", ["ref_id", "position", "seg_1", "seg_2", "haplotype"])
+                                         "strand", "read_length", "haplotype", "mapq"])
+
 
 class ReadConnection(object):
     __slots__ = "ref_id_1", "pos_1", "sign_1", "ref_id_2", "pos_2", "sign_2", "haplotype"
@@ -71,7 +73,7 @@ class DoubleBreak(object):
         #self.spanning_reads = []
 
 cigar_parser = re.compile("[0-9]+[MIDNSHP=X]")
-def get_segment(read_id, ref_id, ref_start, strand, cigar, haplotype):
+def get_segment(read_id, ref_id, ref_start, strand, cigar, haplotype, mapq):
     """
     Parses cigar and generate ReadSegment structure with alignment coordinates
     """
@@ -109,7 +111,7 @@ def get_segment(read_id, ref_id, ref_start, strand, cigar, haplotype):
         read_start, read_end = read_length - read_end, read_length - read_start
 
     return ReadSegment(read_start, read_end, ref_start, ref_end, read_id,
-                       ref_id, strand, read_length, haplotype)
+                       ref_id, strand, read_length, haplotype, mapq)
 
 
 def get_split_reads(bam_file, ref_id, inter_contig):
@@ -121,10 +123,15 @@ def get_split_reads(bam_file, ref_id, inter_contig):
 
     aln_file = pysam.AlignmentFile(bam_file, "rb")
     for aln in aln_file.fetch(ref_id, multiple_iterators=True):
+        if not check_read_mapping_confidence(aln.to_string(), MIN_ALIGNED_LENGTH, MIN_ALIGNED_RATE,
+                                             MAX_READ_ERROR, MAX_SEGMENTS):
+            continue
+
         fields = aln.to_string().split()
         #fields = line.split()
         read_id, flags, chr_id, position = fields[0:4]
         cigar = fields[5]
+        mapq = int(fields[4])
         ref_id, ref_start = fields[2], int(fields[3])
 
         is_supplementary = int(flags) & 0x800
@@ -148,19 +155,23 @@ def get_split_reads(bam_file, ref_id, inter_contig):
             haplotype = int(hp_tag)
 
         segments = []
-        segments.append(get_segment(read_id, ref_id, ref_start, strand, cigar, haplotype))
+        segments.append(get_segment(read_id, ref_id, ref_start, strand, cigar, haplotype, mapq))
 
         if sa_tag:
             for sa_aln in sa_tag.split(";"):
                 if sa_aln:
                     sa_fields = sa_aln.split(",")
-                    sa_ref, sa_ref_pos, sa_strand, sa_cigar = sa_fields[0], int(sa_fields[1]), sa_fields[2], sa_fields[3]
+                    sa_ref, sa_ref_pos, sa_strand, sa_cigar, sa_mapq = \
+                            sa_fields[0], int(sa_fields[1]), sa_fields[2], sa_fields[3], int(sa_fields[4])
 
                     if sa_ref == ref_id or inter_contig:
-                        segments.append(get_segment(read_id, sa_ref, sa_ref_pos, sa_strand, sa_cigar, haplotype))
+                        segments.append(get_segment(read_id, sa_ref, sa_ref_pos, sa_strand, sa_cigar, haplotype, sa_mapq))
 
         segments.sort(key=lambda s: s.read_start)
-        split_reads.append(segments)
+        segments = [s for s in segments if s.mapq >= MIN_SEGMENT_MAPQ and
+                                           s.read_end - s.read_start >= MIN_SEGMENT_LENGTH]
+        if segments:
+            split_reads.append(segments)
 
     return split_reads
 
@@ -180,7 +191,7 @@ def get_all_reads_parallel(bam_file, num_threads, inter_contig):
     return all_reads
 
 
-def resolve_overlaps(split_reads, min_ovlp_len):
+def resolve_overlaps(split_reads, min_ovlp_len, max_overlap):
     """
     Some supplementary alignments may be overlapping (e.g. in case of inversions with flanking repeat).
     This function checks if the overlap has ok structe, trims and outputs non-overlapping alignments
@@ -211,14 +222,14 @@ def resolve_overlaps(split_reads, min_ovlp_len):
             right_ovlp = right_ovlp // 2
             seg = read_segments[i]
 
-            if left_ovlp > 0:
+            if max_overlap > left_ovlp and left_ovlp > 0:
                 if seg.strand == "+":
                     seg = seg._replace(read_start = seg.read_start + left_ovlp,
                                        ref_start = seg.ref_start + left_ovlp)
                 else:
                     seg = seg._replace(read_start = seg.read_start + left_ovlp,
                                        ref_end = seg.ref_end - left_ovlp)
-            if right_ovlp > 0:
+            if max_overlap > right_ovlp and right_ovlp > 0:
                 if seg.strand == "+":
                     seg = seg._replace(read_end = seg.read_end - right_ovlp,
                                        ref_end = seg.ref_end - right_ovlp)
@@ -392,12 +403,23 @@ def output_inversions(breaks, out_stream):
                                             str(max_hp), str(by_hp[max_hp] // 2), str(num_opposing)]) + "\n")
 
 
-def _run_pipeline(arguments):
-    BP_CLUSTER_SIZE = 100
-    MIN_BREAKPOINT_READS = 10
-    MIN_DOUBLE_BP_READS = 5
-    MIN_REF_FLANK = 5000
+#alignment filtering parameters
+MIN_ALIGNED_LENGTH = 10000
+MIN_ALIGNED_RATE = 0.9
+MAX_READ_ERROR = 0.1
+MAX_SEGMENTS = 3
+MIN_SEGMENT_MAPQ = 10
+MIN_SEGMENT_LENGTH = 500
 
+#split reads default parameters
+BP_CLUSTER_SIZE = 100
+MIN_BREAKPOINT_READS = 10
+MIN_DOUBLE_BP_READS = 5
+MIN_REF_FLANK = 5000
+MAX_SEGEMNT_OVERLAP = 500
+
+
+def _run_pipeline(arguments):
     parser = argparse.ArgumentParser \
         (description="Find breakpoints given a bam file")
 
@@ -430,7 +452,7 @@ def _run_pipeline(arguments):
             split_reads.append(r)
     logger.info("Parsed %d reads %d split reads", len(all_reads), len(split_reads))
 
-    split_reads = resolve_overlaps(split_reads, args.cluster_size)
+    split_reads = resolve_overlaps(split_reads, args.cluster_size, MAX_SEGEMNT_OVERLAP)
     bp_clusters = get_breakpoints(all_reads, split_reads, args.cluster_size, args.bp_min_reads, args.min_ref_flank, ref_lengths)
     all_breaks, balanced_breaks = get_2_breaks(bp_clusters, args.cluster_size, args.double_bp_min_reads)
 
