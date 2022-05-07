@@ -94,6 +94,28 @@ def bed_liftover(bam_file, output_failed, line):
     return fields
 
 
+def vcf_liftover(bam_file, output_failed, line):
+    fields = line.split("\t")
+    start_chr, start_pos = fields[0], int(fields[1])
+    proj_start_chr, proj_start_pos, proj_start_sign = project(bam_file, start_chr, start_pos)
+    fields[0], fields[1] = proj_start_chr, str(proj_start_pos)
+
+    bp_field = fields[4]
+    if "[" in bp_field or "]" in bp_field:
+        direction = "[" if "[" in bp_field else "]"
+        fst_bracket = bp_field.find(direction)
+        snd_bracket = bp_field.rfind(direction)
+        coord = bp_field[fst_bracket + 1 : snd_bracket]
+        end_chr, end_pos = coord.split(":")[0], int(coord.split(":")[1])
+
+        proj_end_chr, proj_end_pos, proj_end_sign = project(bam_file, end_chr, end_pos)
+        fields[4] = bp_field[0:fst_bracket + 1] + proj_end_chr + ":" + str(proj_end_pos) + bp_field[snd_bracket:]
+    else:
+        print("AAAA:", line)
+
+    return "\t".join(fields)
+
+
 def _unpacker(args):
     return bed_liftover(*args)
 
@@ -126,6 +148,11 @@ def main():
     bed_file = sys.argv[1]
     bam_file = sys.argv[2]
     liftover_parallel(bed_file, bam_file, sys.stdout, False, 10)
+    #for line in open(bed_file, "r"):
+    #    if line.startswith("#"):
+    #        print(line.strip())
+    #    else:
+    #        print(vcf_liftover(bam_file, True, line.strip()))
 
 
 if __name__ == "__main__":
