@@ -16,7 +16,7 @@ RUN ln -s /usr/bin/python3 /usr/bin/python
 
 RUN python3 --version && \
 	python3 -m pip install --upgrade pip && \
-	python3 -m pip install cython wheel pysam numpy && \
+	python3 -m pip install cython wheel pysam numpy biopython && \
 	python3 -m pip uninstall -y enum34 && \
 #disables Cuda, but saved ~2Gb of image size
 	python3 -m pip install torch==1.9.0+cpu -f https://download.pytorch.org/whl/cpu/torch_stable.html
