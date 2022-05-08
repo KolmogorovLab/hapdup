@@ -27,16 +27,17 @@ ReadSegment = namedtuple("ReadSegment", ["read_start", "read_end", "ref_start", 
 
 
 class ReadConnection(object):
-    __slots__ = "ref_id_1", "pos_1", "sign_1", "ref_id_2", "pos_2", "sign_2", "haplotype"
+    __slots__ = "ref_id_1", "pos_1", "sign_1", "ref_id_2", "pos_2", "sign_2", "haplotype_1", "haplotype_2"
 
-    def __init__(self, ref_id_1, pos_1, sign_1, ref_id_2, pos_2, sign_2, haplotype):
+    def __init__(self, ref_id_1, pos_1, sign_1, ref_id_2, pos_2, sign_2, haplotype_1, haplotype_2):
         self.ref_id_1 = ref_id_1
         self.ref_id_2 = ref_id_2
         self.pos_1 = pos_1
         self.pos_2 = pos_2
         self.sign_1 = sign_1
         self.sign_2 = sign_2
-        self.haplotype = haplotype
+        self.haplotype_1 = haplotype_1
+        self.haplotype_2 = haplotype_2
 
     def signed_coord_1(self):
         return self.sign_1 * self.pos_1
@@ -119,16 +120,12 @@ def get_split_reads(bam_file, ref_id, inter_contig):
     Yields set of split reads for each contig separately. Only reads primary alignments
     and infers the split reads from SA alignment tag
     """
-    split_reads = []
+    filtered_reads = set()
+    alignments = []
 
     aln_file = pysam.AlignmentFile(bam_file, "rb")
     for aln in aln_file.fetch(ref_id, multiple_iterators=True):
-        if not check_read_mapping_confidence(aln.to_string(), MIN_ALIGNED_LENGTH, MIN_ALIGNED_RATE,
-                                             MAX_READ_ERROR, MAX_SEGMENTS):
-            continue
-
         fields = aln.to_string().split()
-        #fields = line.split()
         read_id, flags, chr_id, position = fields[0:4]
         cigar = fields[5]
         mapq = int(fields[4])
@@ -137,9 +134,17 @@ def get_split_reads(bam_file, ref_id, inter_contig):
         is_supplementary = int(flags) & 0x800
         is_secondary = int(flags) & 0x100
         is_unmapped = int(flags) & 0x4
+        is_primary = not (is_supplementary or is_secondary or is_unmapped)
         strand = "-" if int(flags) & 0x10 else "+"
 
-        if is_supplementary or is_secondary or is_unmapped:
+        if not check_read_mapping_confidence(aln.to_string(), MIN_ALIGNED_LENGTH, MIN_ALIGNED_RATE,
+                                             MAX_READ_ERROR, MAX_SEGMENTS):
+            if is_primary:
+                filtered_reads.add(aln.query_name)
+            continue
+
+        #if is_supplementary or is_secondary or is_unmapped:
+        if is_secondary or is_unmapped:
             continue
 
         sa_tag = None
@@ -154,26 +159,11 @@ def get_split_reads(bam_file, ref_id, inter_contig):
         else:
             haplotype = int(hp_tag)
 
-        segments = []
-        segments.append(get_segment(read_id, ref_id, ref_start, strand, cigar, haplotype, mapq))
+        new_segment = get_segment(read_id, ref_id, ref_start, strand, cigar, haplotype, mapq)
+        if new_segment.mapq >= MIN_SEGMENT_MAPQ and new_segment.read_end - new_segment.read_start >= MIN_SEGMENT_LENGTH:
+            alignments.append(new_segment)
 
-        if sa_tag:
-            for sa_aln in sa_tag.split(";"):
-                if sa_aln:
-                    sa_fields = sa_aln.split(",")
-                    sa_ref, sa_ref_pos, sa_strand, sa_cigar, sa_mapq = \
-                            sa_fields[0], int(sa_fields[1]), sa_fields[2], sa_fields[3], int(sa_fields[4])
-
-                    if sa_ref == ref_id or inter_contig:
-                        segments.append(get_segment(read_id, sa_ref, sa_ref_pos, sa_strand, sa_cigar, haplotype, sa_mapq))
-
-        segments.sort(key=lambda s: s.read_start)
-        segments = [s for s in segments if s.mapq >= MIN_SEGMENT_MAPQ and
-                                           s.read_end - s.read_start >= MIN_SEGMENT_LENGTH]
-        if segments:
-            split_reads.append(segments)
-
-    return split_reads
+    return filtered_reads, alignments
 
 def _unpacker(args):
     return get_split_reads(*args)
@@ -183,11 +173,24 @@ def get_all_reads_parallel(bam_file, num_threads, inter_contig):
     random.shuffle(all_reference_ids)
     tasks = [(bam_file, r, inter_contig) for r in all_reference_ids]
 
-    fetched_reads = None
+    parsing_results = None
     with Pool(num_threads) as p:
-        fetched_reads = p.map(_unpacker, tasks)
+        parsing_results = p.map(_unpacker, tasks)
 
-    all_reads = sum(fetched_reads, [])
+    all_filtered_reads = set()
+    segments_by_read = defaultdict(list)
+    for filtered, alignments in parsing_results:
+        all_filtered_reads |= filtered
+        for aln in alignments:
+            segments_by_read[aln.read_id].append(aln)
+
+    all_reads = []
+    for read in segments_by_read:
+        if read not in all_filtered_reads:
+            segments = segments_by_read[read]
+            segments.sort(key=lambda s: s.read_start)
+            all_reads.append(segments)
+
     return all_reads
 
 
@@ -267,8 +270,8 @@ def get_breakpoints(all_reads, split_reads, clust_len, min_reads, min_ref_flank,
                 #seq_breakpoints[s1.ref_id].append(ReadConnection(s1.ref_id, ref_bp_1, conn_1, conn_2, s1.haplotype))
                 #seq_breakpoints[s2.ref_id].append(ReadConnection(s2.ref_id, ref_bp_2, conn_2, conn_1, s1.haplotype))
 
-                seq_breakpoints[s1.ref_id].append(ReadConnection(s1.ref_id, ref_bp_1, sign_1, s2.ref_id, ref_bp_2, sign_2, s1.haplotype))
-                seq_breakpoints[s2.ref_id].append(ReadConnection(s2.ref_id, ref_bp_2, sign_2, s1.ref_id, ref_bp_1, sign_1, s2.haplotype))
+                seq_breakpoints[s1.ref_id].append(ReadConnection(s1.ref_id, ref_bp_1, sign_1, s2.ref_id, ref_bp_2, sign_2, s1.haplotype, s2.haplotype))
+                seq_breakpoints[s2.ref_id].append(ReadConnection(s2.ref_id, ref_bp_2, sign_2, s1.ref_id, ref_bp_1, sign_1, s2.haplotype, s1.haplotype))
 
     bp_clusters = defaultdict(list)
     for seq, bp_pos in seq_breakpoints.items():
@@ -332,13 +335,18 @@ def get_2_breaks(bp_clusters, clust_len, min_connections):
                 if bp_1 == bp_2:
                     continue
 
-                if bp_2.position < bp_1.position:
-                    bp_1, bp_2 = bp_2, bp_1
-                    dir_1, dir_2 = dir_2, dir_1
-                double_connections[(bp_1, dir_1, bp_2, dir_2)].append(conn)
+                #new_conn = conn
+                #if bp_2.position < bp_1.position:
+                #    bp_1, bp_2 = bp_2, bp_1
+                #    dir_1, dir_2 = dir_2, dir_1
+                #    new_conn = ReadConnection(conn.ref_id_2, conn.pos_2, conn.sign_2, conn.ref_id_1,
+                #                              conn.pos_1, conn.sign_1, conn.haplotype_2, conn.haplotype_1)
+                #double_connections[(bp_1, dir_1, bp_2, dir_2)].append(new_conn)
+                if bp_2.position >= bp_1.position:
+                    double_connections[(bp_1, dir_1, bp_2, dir_2)].append(conn)
 
     for (bp_1, dir_1, bp_2, dir_2), conn_list in double_connections.items():
-        if len(conn_list) // 2 >= min_connections:
+        if len(conn_list) >= min_connections:
             double_breaks.append(DoubleBreak(bp_1, dir_1, bp_2, dir_2))
             double_breaks[-1].connections = conn_list
 
@@ -359,22 +367,35 @@ def get_2_breaks(bp_clusters, clust_len, min_connections):
 
 
 def output_breaks(breaks, out_stream):
-    header = "#seq_id_1\tpos_1\tdirection_1\tseq_id_2\tposition_2\tdirection_2\thaplotype\tsupporting_reads\topposing_reads"
+    header = "#seq_id_1\tpos_1\tdirection_1\tseq_id_2\tposition_2\tdirection_2\thaplotype_1\tsupport_1\tagainst_1\thaplotype_2\tsupport_2\tagainst_2"
     out_stream.write(header + "\n")
     for br in breaks:
-        by_hp = defaultdict(int)
-        for conn in br.connections:
-            by_hp[conn.haplotype] += 1
-        max_hp = max(by_hp, key=by_hp.get)
+        by_hp_1 = defaultdict(int)
+        by_hp_2 = defaultdict(int)
+        #print(br.bp_1.ref_id, br.bp_1.position, br.bp_2.ref_id, br.bp_2.position)
+        for conn in br.bp_1.connections:
+            #print("\t", conn.ref_id_1, conn.pos_1, conn.ref_id_1, conn.pos_2, conn.haplotype_1, conn.haplotype_2)
+            by_hp_1[conn.haplotype_1] += 1
+        for conn in br.bp_2.connections:
+            by_hp_2[conn.haplotype_1] += 1
 
-        num_opposing = 0
-        for r in br.bp_1.spanning_reads + br.bp_2.spanning_reads:
-            if r.haplotype == max_hp:
-                num_opposing += 1
+        max_hp_1 = max(by_hp_1, key=by_hp_1.get)
+        max_hp_2 = max(by_hp_2, key=by_hp_2.get)
+
+        num_opposing_1 = 0
+        for r in br.bp_1.spanning_reads:
+            if r.haplotype == max_hp_1:
+                num_opposing_1 += 1
+
+        num_opposing_2 = 0
+        for r in br.bp_2.spanning_reads:
+            if r.haplotype == max_hp_2:
+                num_opposing_2 += 1
 
         out_stream.write("\t".join([br.bp_1.ref_id, str(br.bp_1.position), "+" if br.direction_1 > 0 else "-",
                                    br.bp_2.ref_id, str(br.bp_2.position), "+" if br.direction_2 > 0 else "-",
-                                   str(max_hp), str(by_hp[max_hp] // 2), str(num_opposing)]) + "\n")
+                                   str(max_hp_1), str(by_hp_1[max_hp_1]), str(num_opposing_1),
+                                   str(max_hp_2), str(by_hp_2[max_hp_2]), str(num_opposing_2) + "\n"]))
 
 
 def output_inversions(breaks, out_stream):
@@ -392,7 +413,7 @@ def output_inversions(breaks, out_stream):
             if matching:
                 by_hp = defaultdict(int)
                 for conn in br.connections:
-                    by_hp[conn.haplotype] += 1
+                    by_hp[conn.haplotype_1] += 1
                 max_hp = max(by_hp, key=by_hp.get)
 
                 num_opposing = 0
@@ -400,7 +421,7 @@ def output_inversions(breaks, out_stream):
                     if r.haplotype == max_hp:
                         num_opposing += 1
                 out_stream.write("\t".join([br.bp_1.ref_id, str(br.bp_1.position), str(br.bp_2.position),
-                                            str(max_hp), str(by_hp[max_hp] // 2), str(num_opposing)]) + "\n")
+                                            str(max_hp), str(by_hp[max_hp]), str(num_opposing)]) + "\n")
 
 
 #alignment filtering parameters
@@ -409,7 +430,7 @@ MIN_ALIGNED_RATE = 0.9
 MAX_READ_ERROR = 0.1
 MAX_SEGMENTS = 3
 MIN_SEGMENT_MAPQ = 10
-MIN_SEGMENT_LENGTH = 500
+MIN_SEGMENT_LENGTH = 100
 
 #split reads default parameters
 BP_CLUSTER_SIZE = 100
