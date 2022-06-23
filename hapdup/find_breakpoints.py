@@ -424,11 +424,25 @@ def output_inversions(breaks, out_stream):
                                             str(max_hp), str(by_hp[max_hp]), str(num_opposing)]) + "\n")
 
 
+def output_single_breakpoints(breakpoints, filename):
+    with open(filename, "w") as f:
+        f.write("#chr\tposition\tHP\tsupport_reads\tspanning_reads\n")
+        for seq in breakpoints:
+            for bp in breakpoints[seq]:
+                by_hp = defaultdict(int)
+                for conn in bp.connections:
+                    by_hp[conn.haplotype_1] += 1
+                max_hp = max(by_hp, key=by_hp.get)
+
+                f.write("{0}\t{1}\t{2}\t{3}\t{4}\n".format(seq, bp.position, max_hp,
+                                                         len(bp.connections), len(bp.spanning_reads)))
+
+
 #alignment filtering parameters
 MIN_ALIGNED_LENGTH = 10000
 MIN_ALIGNED_RATE = 0.9
 MAX_READ_ERROR = 0.1
-MAX_SEGMENTS = 3
+MAX_SEGMENTS = 10
 MIN_SEGMENT_MAPQ = 10
 MIN_SEGMENT_LENGTH = 100
 
@@ -480,7 +494,9 @@ def _run_pipeline(arguments):
     out_breaks = os.path.join(args.out_dir, "breakpoints_all.csv")
     out_balanced_breaks = os.path.join(args.out_dir, "breakpoints_balanced.csv")
     out_inversions = os.path.join(args.out_dir, "inversions.bed")
+    out_single_bp = os.path.join(args.out_dir, "single_breakpoints.csv")
 
+    output_single_breakpoints(bp_clusters, out_single_bp)
     output_breaks(all_breaks, open(out_breaks, "w"))
     output_breaks(balanced_breaks, open(out_balanced_breaks, "w"))
     output_inversions(balanced_breaks, open(out_inversions, "w"))
