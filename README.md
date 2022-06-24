@@ -5,7 +5,7 @@ HapDup works with either Oxford Nanopore or PacBio (HiFi or CLR). The reconstruc
 structural variants (in addition to small variants) and are locally phased.
 
 
-## Version 0.7
+## Version 0.8
 
 Input requirements
 ------------------
@@ -43,7 +43,7 @@ should be adjusted according to the available resources. For PacBio HiFi input, 
 ```
 cd directory_with_assembly_and_alignment
 HD_DIR=`pwd`
-docker run -v $HD_DIR:$HD_DIR -u `id -u`:`id -g` mkolmogo/hapdup:0.7 \
+docker run -v $HD_DIR:$HD_DIR -u `id -u`:`id -g` mkolmogo/hapdup:0.8 \
   hapdup --assembly $HD_DIR/assembly.fasta --bam $HD_DIR/lr_mapping.bam --out-dir $HD_DIR/hapdup -t 64 --rtype ont
 ```
 
@@ -64,9 +64,9 @@ should be adjusted according to the available resources. For PacBio HiFi input, 
 `--rtype hifi` instead of `--rtype ont`.
 
 ```
-singularity pull docker://mkolmogo/hapdup:0.6
+singularity pull docker://mkolmogo/hapdup:0.8
 HD_DIR=`pwd`
-singularity exec --bind $HD_DIR hapdup_0.6.sif \
+singularity exec --bind $HD_DIR hapdup_0.8.sif \
   hapdup --assembly $HD_DIR/assembly.fasta --bam $HD_DIR/lr_mapping.bam --out-dir $HD_DIR/hapdup -t 64 --rtype ont
 ```
 
