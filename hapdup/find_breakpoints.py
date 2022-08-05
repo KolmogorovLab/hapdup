@@ -79,7 +79,7 @@ def get_segment(read_id, ref_id, ref_start, strand, cigar, haplotype, mapq):
     """
     Parses cigar and generate ReadSegment structure with alignment coordinates
     """
-    first_clip = False
+    first_clip = True
     read_start = 0
     read_aligned = 0
     read_length = 0
@@ -91,10 +91,10 @@ def get_segment(read_id, ref_id, ref_start, strand, cigar, haplotype, mapq):
         op_len = int(token[:-1])
 
         if op == "H" or op == "S":
-            if not first_clip:
-                first_clip = True
+            if first_clip:
                 read_start = op_len
             read_length += op_len
+        first_clip = False
 
         if op == "M" or op == "=" or op == "X":
             read_aligned += op_len
