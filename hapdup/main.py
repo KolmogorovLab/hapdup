@@ -13,6 +13,7 @@ from hapdup.find_breakpoints import find_breakpoints
 from hapdup.bed_liftover import liftover_parallel
 from hapdup.apply_inversions import apply_inversions
 from hapdup.filter_misplaced_alignments import filter_alignments_parallel
+from hapdup.cut_phased_blocks import cut_phased_blocks
 from hapdup.__version__ import __version__
 
 
@@ -80,6 +81,9 @@ def main():
     parser.add_argument("--overwrite", dest="overwrite",
                         default=False, action="store_true",
                         help="Do not attempt to restart from complete phases, overwrites existing results")
+    parser.add_argument("--use-unphased", dest="use_unphased",
+                        default=False, action="store_true",
+                        help="Use unphased reads for polishing")
     parser.add_argument("--rtype", dest="rtype", default="ont", required=True, metavar="(ont|hifi)",
                         help="Long reads type, ONT or HiFi: (ont|hifi)")
 
@@ -134,8 +138,11 @@ def main():
     structural_dir = os.path.join(args.out_dir, "structural")
     inversions_bed = os.path.join(structural_dir, "inversions.bed")
 
-    final_haplotype = {1 : os.path.join(args.out_dir, "haplotype_1.fasta"),
-                       2 : os.path.join(args.out_dir, "haplotype_2.fasta")}
+    final_dual_asm = {1 : os.path.join(args.out_dir, "hapdup_dual_1.fasta"),
+                      2 : os.path.join(args.out_dir, "hapdup_dual_2.fasta")}
+
+    final_phased_asm = {1 : os.path.join(args.out_dir, "hapdup_phased_1.fasta"),
+                        2 : os.path.join(args.out_dir, "hapdup_phased_2.fasta")}
 
     #STAGE 1: filter suspicious alignments, index the resulting bam
     overwrite = args.overwrite
@@ -218,8 +225,10 @@ def main():
             elif args.rtype == "hifi":
                 reads_arg = "--pacbio-hifi"
 
+            hp_string = "0,{}".format(hp) if args.use_unphased else str(hp)
+
             flye_cmd = [FLYE, "--polish-target", os.path.abspath(args.assembly), reads_arg,  haplotagged_bam, "-t", str(threads),
-                        "-o", flye_out, "--polish-haplotypes", "0,{}".format(hp), "2>/dev/null"]
+                        "-o", flye_out, "--polish-haplotypes", hp_string, "2>/dev/null"]
             logger.info("Running: %s", " ".join(flye_cmd))
             subprocess.check_call(" ".join(flye_cmd), shell=True)
 
@@ -254,7 +263,8 @@ def main():
         #bed_liftover(phased_blocks_bed, minimap_out, open(phased_blocks_hp, "w"))
         liftover_parallel(phased_blocks_bed, minimap_out, open(phased_blocks_hp, "w"), False, args.threads)
 
-        apply_inversions(inversions_hp, polished_flye_hap[hp], final_haplotype[hp], hp)
+        apply_inversions(inversions_hp, polished_flye_hap[hp], final_dual_asm[hp], hp)
+        cut_phased_blocks(phased_blocks_hp, final_dual_asm[hp], final_phased_asm[hp])
 
 
 if __name__ == "__main__":
