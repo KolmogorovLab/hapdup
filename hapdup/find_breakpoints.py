@@ -455,7 +455,7 @@ def output_single_breakpoints(breakpoints, filename):
 
 
 #alignment filtering parameters
-MIN_ALIGNED_LENGTH = 10000
+MIN_ALIGNED_LENGTH = 7000
 MIN_ALIGNED_RATE = 0.9
 MAX_READ_ERROR = 0.1
 MAX_SEGMENTS = 10
@@ -464,8 +464,8 @@ MIN_SEGMENT_LENGTH = 100
 
 #split reads default parameters
 BP_CLUSTER_SIZE = 100
-MIN_BREAKPOINT_READS = 10
-MIN_DOUBLE_BP_READS = 5
+MIN_BREAKPOINT_READS = 3
+MIN_DOUBLE_BP_READS = 2
 MIN_REF_FLANK = 5000
 MAX_SEGEMNT_OVERLAP = 500
 
