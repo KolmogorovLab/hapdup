@@ -27,9 +27,9 @@ ReadSegment = namedtuple("ReadSegment", ["read_start", "read_end", "ref_start", 
 
 
 class ReadConnection(object):
-    __slots__ = "ref_id_1", "pos_1", "sign_1", "ref_id_2", "pos_2", "sign_2", "haplotype_1", "haplotype_2"
+    __slots__ = "ref_id_1", "pos_1", "sign_1", "ref_id_2", "pos_2", "sign_2", "haplotype_1", "haplotype_2", "read_id"
 
-    def __init__(self, ref_id_1, pos_1, sign_1, ref_id_2, pos_2, sign_2, haplotype_1, haplotype_2):
+    def __init__(self, ref_id_1, pos_1, sign_1, ref_id_2, pos_2, sign_2, haplotype_1, haplotype_2, read_id):
         self.ref_id_1 = ref_id_1
         self.ref_id_2 = ref_id_2
         self.pos_1 = pos_1
@@ -38,6 +38,7 @@ class ReadConnection(object):
         self.sign_2 = sign_2
         self.haplotype_1 = haplotype_1
         self.haplotype_2 = haplotype_2
+        self.read_id = read_id
 
     def signed_coord_1(self):
         return self.sign_1 * self.pos_1
@@ -165,10 +166,12 @@ def get_split_reads(bam_file, ref_id, inter_contig):
 
     return filtered_reads, alignments
 
+
 def _unpacker(args):
     return get_split_reads(*args)
 
-def get_all_reads_parallel(bam_file, num_threads, inter_contig):
+
+def get_all_reads_parallel(bam_file, num_threads, inter_contig, aln_dump_file):
     all_reference_ids = [r for r in pysam.AlignmentFile(bam_file, "rb").references]
     random.shuffle(all_reference_ids)
     tasks = [(bam_file, r, inter_contig) for r in all_reference_ids]
@@ -185,11 +188,19 @@ def get_all_reads_parallel(bam_file, num_threads, inter_contig):
             segments_by_read[aln.read_id].append(aln)
 
     all_reads = []
+    fout = open(aln_dump_file, "w")
     for read in segments_by_read:
         if read not in all_filtered_reads:
+            fout.write(str(read) + "\n")
+            for seg in segments_by_read[read]:
+                fout.write(str(seg) + "\n")
+            fout.write("\n")
+
             segments = segments_by_read[read]
             segments.sort(key=lambda s: s.read_start)
             all_reads.append(segments)
+        else:
+            four.write("Filtered: " + str(read))
 
     return all_reads
 
@@ -270,8 +281,10 @@ def get_breakpoints(all_reads, split_reads, clust_len, min_reads, min_ref_flank,
                 #seq_breakpoints[s1.ref_id].append(ReadConnection(s1.ref_id, ref_bp_1, conn_1, conn_2, s1.haplotype))
                 #seq_breakpoints[s2.ref_id].append(ReadConnection(s2.ref_id, ref_bp_2, conn_2, conn_1, s1.haplotype))
 
-                seq_breakpoints[s1.ref_id].append(ReadConnection(s1.ref_id, ref_bp_1, sign_1, s2.ref_id, ref_bp_2, sign_2, s1.haplotype, s2.haplotype))
-                seq_breakpoints[s2.ref_id].append(ReadConnection(s2.ref_id, ref_bp_2, sign_2, s1.ref_id, ref_bp_1, sign_1, s2.haplotype, s1.haplotype))
+                seq_breakpoints[s1.ref_id].append(ReadConnection(s1.ref_id, ref_bp_1, sign_1, s2.ref_id, ref_bp_2, sign_2,
+                                                                 s1.haplotype, s2.haplotype, s1.read_id))
+                seq_breakpoints[s2.ref_id].append(ReadConnection(s2.ref_id, ref_bp_2, sign_2, s1.ref_id, ref_bp_1, sign_1,
+                                                                 s2.haplotype, s1.haplotype, s2.read_id))
 
     bp_clusters = defaultdict(list)
     for seq, bp_pos in seq_breakpoints.items():
@@ -289,7 +302,10 @@ def get_breakpoints(all_reads, split_reads, clust_len, min_reads, min_ref_flank,
             clusters.append(cur_cluster)
 
         for cl in clusters:
-            if len(cl) >= min_reads:
+            unique_reads = set()
+            for x in cl:
+                unique_reads.add(x.read_id)
+            if len(unique_reads) >= min_reads:
                 position = int(np.median([x.pos_1 for x in cl]))
                 if position > min_ref_flank and position < ref_lengths[seq] - min_ref_flank:
                     bp_cluster = Breakpoint(seq, position)
@@ -480,12 +496,14 @@ def _run_pipeline(arguments):
     with pysam.AlignmentFile(args.bam_path, "rb") as a:
         ref_lengths = dict(zip(a.references, a.lengths))
 
-    all_reads = get_all_reads_parallel(args.bam_path, args.threads, inter_contig=True)
+    aln_dump_file = os.path.join(args.out_dir, "aligned_segments.txt")
+
+    all_reads = get_all_reads_parallel(args.bam_path, args.threads, True, aln_dump_file)
     split_reads = []
     for r in all_reads:
         if len(r) > 1:
             split_reads.append(r)
-    logger.info("Parsed %d reads %d split reads", len(all_reads), len(split_reads))
+    print("Parsed {0} reads {1} split reads".format(len(all_reads), len(split_reads)))
 
     split_reads = resolve_overlaps(split_reads, args.cluster_size, MAX_SEGEMNT_OVERLAP)
     bp_clusters = get_breakpoints(all_reads, split_reads, args.cluster_size, args.bp_min_reads, args.min_ref_flank, ref_lengths)
