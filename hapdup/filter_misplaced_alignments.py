@@ -20,7 +20,7 @@ ReadSegment = namedtuple("ReadSegment", ["read_start", "read_end", "ref_start", 
 
 
 def get_segment(read_id, ref_id, ref_start, strand, cigar, num_mismatch):
-    first_clip = False
+    first_clip = True
     read_start = 0
     read_aligned = 0
     read_length = 0
@@ -32,10 +32,10 @@ def get_segment(read_id, ref_id, ref_start, strand, cigar, num_mismatch):
         op_len = int(token[:-1])
 
         if op in "HS":
-            if not first_clip:
-                first_clip = True
+            if first_clip:
                 read_start = op_len
             read_length += op_len
+        first_clip = False
 
         if op in "M=X":
             read_aligned += op_len
