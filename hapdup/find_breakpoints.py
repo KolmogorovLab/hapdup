@@ -48,13 +48,14 @@ class ReadConnection(object):
 
 
 class Breakpoint(object):
-    __slots__ = "ref_id", "position", "spanning_reads", "connections"
+    __slots__ = "ref_id", "position", "spanning_reads", "connections", "inner"
 
     def __init__(self, ref_id, ref_position):
         self.ref_id = ref_id
         self.position = ref_position
         self.spanning_reads = []
-        self.connections =[]
+        self.connections = []
+        self.inner = True
 
 
 class DoubleBreak(object):
@@ -307,10 +308,12 @@ def get_breakpoints(all_reads, split_reads, clust_len, min_reads, min_ref_flank,
                 unique_reads.add(x.read_id)
             if len(unique_reads) >= min_reads:
                 position = int(np.median([x.pos_1 for x in cl]))
-                if position > min_ref_flank and position < ref_lengths[seq] - min_ref_flank:
-                    bp_cluster = Breakpoint(seq, position)
-                    bp_cluster.connections = cl
-                    bp_clusters[seq].append(bp_cluster)
+
+                inner = position > min_ref_flank and position < ref_lengths[seq] - min_ref_flank
+                bp_cluster = Breakpoint(seq, position)
+                bp_cluster.connections = cl
+                bp_cluster.inner = inner
+                bp_clusters[seq].append(bp_cluster)
 
     #find reads that span putative breakpoints
     for read_segments in all_reads:
@@ -362,7 +365,7 @@ def get_2_breaks(bp_clusters, clust_len, min_connections):
                     double_connections[(bp_1, dir_1, bp_2, dir_2)].append(conn)
 
     for (bp_1, dir_1, bp_2, dir_2), conn_list in double_connections.items():
-        if len(conn_list) >= min_connections:
+        if len(conn_list) >= min_connections and (bp_1.inner or bp_2.inner):
             double_breaks.append(DoubleBreak(bp_1, dir_1, bp_2, dir_2))
             double_breaks[-1].connections = conn_list
 
@@ -445,6 +448,9 @@ def output_single_breakpoints(breakpoints, filename):
         f.write("#chr\tposition\tHP\tsupport_reads\tspanning_reads\n")
         for seq in breakpoints:
             for bp in breakpoints[seq]:
+                if not bp.inner:
+                    continue
+
                 by_hp = defaultdict(int)
                 for conn in bp.connections:
                     by_hp[conn.haplotype_1] += 1
