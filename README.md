@@ -185,9 +185,9 @@ The major parts of the HapDup pipeline are:
 Authors
 -------
 
-The pipeline was developed at [UC Santa Cruz genomics institute](https://ucscgenomics.soe.ucsc.edu/), Benedict Paten's lab.
+The pipeline was originally developed at [Paten lab at UC Santa Cruz](https://ucscgenomics.soe.ucsc.edu/). The work continues at [Kolmogorov lab at NCI](https://ccr.cancer.gov/staff-directory/mikhail-kolmogorov).
 
-Pipeline code contributors:
+Code contributors:
 * Mikhail Kolmogorov
 
 PEPPER/Margin/Shasta support:
