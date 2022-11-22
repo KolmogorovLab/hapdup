@@ -185,7 +185,7 @@ def filter_alignments_parallel(bam_in, bam_out, num_threads, min_aligned_length,
             t.terminate()
         raise
 
-    pysam.merge("-@", str(num_threads), bam_out, *bams_to_merge)
+    pysam.merge("-@", str(num_threads), "-f", bam_out, *bams_to_merge)
     for bam in bams_to_merge:
         os.remove(bam)
 
