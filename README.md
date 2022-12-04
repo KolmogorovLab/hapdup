@@ -119,7 +119,7 @@ using the HG002 for which the [curated set of SVs](https://www.nature.com/articl
 is available. We used the [recent ONT data](https://s3-us-west-2.amazonaws.com/miten-hg002/index.html?prefix=guppy_5.0.7/) 
 basecalled with Guppy 5.
 
-Given HapDup haplotypes, we called SV using [dipdiff](https://github.com/fenderglass/dipdiff). We also compare SV
+Given HapDup haplotypes, we called SV using [hapdiff](https://github.com/KolmogorovLab/hapdiff). We also compare SV
 set against hifiasm assemblies, even though they were produced from HiFi, rather than ONT reads.
 Evaluated using truvari with `-r 2000` option. GT refers to genotype-considered benchmarks.
 
