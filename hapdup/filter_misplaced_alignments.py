@@ -101,9 +101,11 @@ def check_read_mapping_confidence(sam_text_entry, min_aln_length, min_aligned_ra
                 segments.append(get_segment(read_id, sa_ref, sa_ref_pos, sa_strand, sa_cigar, sa_mismatches))
     segments.sort(key=lambda s: s.read_start)
 
-    read_length = segments[0].read_length
-
     WND_LEN = 100
+    read_length = segments[0].read_length
+    if read_length < max(WND_LEN, min_aln_length):
+        return False
+
     read_coverage = [0 for x in range(read_length // WND_LEN)]
     weighted_mm_sum = 0
     total_segment_length = 0
