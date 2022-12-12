@@ -27,7 +27,7 @@ def get_segment(read_id, ref_id, ref_start, strand, cigar, num_mismatch):
     ref_aligned = 0
     #read_end = 0
 
-    for token in re.findall("[\d]{0,}[A-Z]{1}", cigar):
+    for token in re.findall("[\d]{0,}[A-Z=]{1}", cigar):
         op = token[-1]
         op_len = int(token[:-1])
 
