@@ -124,21 +124,22 @@ set against hifiasm assemblies, even though they were produced from HiFi, rather
 Evaluated using truvari with `-r 2000` option. GT refers to genotype-considered benchmarks.
 
 
-| Method         | Precision | Recall | F1-score | GT Precision | GT Recall | GT F1-score |
-|----------------|-----------|--------|----------|--------------|-----------|-------------|
-| Shasta+HapDup  |  0.9500   | 0.9551 | 0.9525   | 0.934        | 0.9543    |  0.9405     |
-| Sniffles       |  0.9294   | 0.9143 | 0.9219   | 0.8284       | 0.9051    |  0.8605     |
-| CuteSV         |  0.9324   | 0.9428 | 0.9376   | 0.9119       | 0.9416    |  0.9265     |
-| hifiasm        |  0.9512   | 0.9734 | 0.9622   | 0.9129       | 0.9723    |  0.9417     |
+| Method         | Precision | Recall | F1-score |
+|----------------|-----------|--------|----------|
+| Shasta+Hapdup  |  0.9557   | 0.9782 | 0.9668   |
+| Sniffles2      |  0.9404   | 0.9649 | 0.9525   |
+| CuteSV         |  0.9324   | 0.9516 | 0.9433   |
+| HPRC curated   |  0.9572   | 0.9831 | 0.9700   |
 
 Yak k-mer based evaluations:
 
-| Hap   |  QV  | Switch err | Hamming err |
-|-------|------|------------|-------------|
-|     1 |  35  |   0.0389   |   0.1862    |  
-|     2 |  35  |   0.0385   |   0.1845    |
+| Genome   |  QV    | Switch err | Hamming err |
+|----------|--------|------------|-------------|
+| HG002    |  34.4  |   0.09 %   |   7.1 %     | 
+| HG00733  |  34.1  |   0.13 %   |   8.6 %     |  
+| HG02723  |  34.1  |   0.05 %   |   7.8 %     |  
 
-Given a minimap2 alignment, HapDup runs in ~400 CPUh and uses ~80 Gb of RAM.
+Given a minimap2 alignment, Hapdup runs in ~400 CPUh and uses ~80 Gb of RAM.
 
 Source installation
 -------------------
@@ -200,12 +201,16 @@ Citation
 
 If you use HapDup in your research, the most relevant papers to cite are:
 
-Kishwar Shafin, Trevor Pesout, Pi-Chuan Chang, Maria Nattestad, Alexey Kolesnikov, Sidharth Goel, Gunjan Baid et al. 
+* Kolmogorov, Billingsley et al, 
+"Scalable Nanopore sequencing of human genomes provides a comprehensive view of haplotype-resolved variation and methylation". bioRxiv (2023)
+[doi:10.1101/2023.01.12.523790](https://doi.org/10.1101/2023.01.12.523790)
+
+* Kishwar Shafin, Trevor Pesout, Pi-Chuan Chang, Maria Nattestad, Alexey Kolesnikov, Sidharth Goel, Gunjan Baid et al. 
 "Haplotype-aware variant calling enables high accuracy in nanopore long-reads using deep neural networks." bioRxiv (2021).
 [doi:10.1101/2021.03.04.433952](https://doi.org/10.1101/2021.03.04.433952)
 
 
-Mikhail Kolmogorov, Jeffrey Yuan, Yu Lin and Pavel Pevzner, 
+* Mikhail Kolmogorov, Jeffrey Yuan, Yu Lin and Pavel Pevzner, 
 "Assembly of Long Error-Prone Reads Using Repeat Graphs", Nature Biotechnology, 2019
 [doi:10.1038/s41587-019-0072-8](https://doi.org/10.1038/s41587-019-0072-8)
 
