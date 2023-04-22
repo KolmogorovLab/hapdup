@@ -226,4 +226,4 @@ How to get help
 A preferred way report any problems or ask questions is the 
 [issue tracker](https://github.com/fenderglass/hapdup/issues). 
 
-In case you prefer personal communication, please contact Mikhail at fenderglass@gmail.com.
+In case you prefer personal communication, please contact Mikhail at mikolmogorov@gmail.com.
