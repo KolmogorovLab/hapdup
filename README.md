@@ -1,7 +1,7 @@
 # Hapdup
 
 HapDup (haplotype duplicator) is a pipeline to convert a haploid long read assembly into a diploid assembly.
-HapDup works with either Oxford Nanopore or PacBio (HiFi or CLR). The reconstructed haplotypes preserve heterozygous 
+HapDup works with either Oxford Nanopore or PacBio HiFi. The reconstructed haplotypes preserve heterozygous 
 structural variants (in addition to small variants) and are locally phased.
 
 
