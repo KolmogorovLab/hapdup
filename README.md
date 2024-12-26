@@ -24,7 +24,7 @@ on the assembly using [minimap2](https://github.com/lh3/minimap2). We recommend 
 
 ```
 minimap2 -ax map-ont -t 30 assembly.fasta reads.fastq | samtools sort -@ 4 -m 4G > lr_mapping.bam
-samtools index -@ 4 assembly_lr_mapping.bam
+samtools index -@ 4 lr_mapping.bam
 ```
 
 Quick start using Docker
